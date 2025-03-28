@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento Confirmado</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #confirmacao {
+            background: #fff;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #22c55e;
+            margin-bottom: 20px;
+        }
+        .info {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .btns {
+            margin-top: 25px;
+        }
+        button, a {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .salvar {
+            background: #3b82f6;
+            color: white;
+        }
+        .voltar {
+            background: #e2e8f0;
+            text-decoration: none;
+            color: #111;
+        }
+    </style>
+</head>
+<body>
+    <div id="confirmacao">
+        <h1>✅ Agendamento Confirmado!</h1>
+
+        {% if dados %}
+            <div class="info">👤 <strong>Nome:</strong> {{ dados.nome }}</div>
+            <div class="info">🏢 <strong>Sala:</strong> {{ dados.sala }}</div>
+            <div class="info">📅 <strong>Data:</strong> {{ dados.data | datetimeformat }}</div>
+            <div class="info">🕐 <strong>Horário:</strong> {{ dados.inicio }} às {{ dados.fim }}</div>
+        {% endif %}
+
+        <div class="btns">
+            <button class="salvar" onclick="baixarImagem()">💾 Salvar confirmação</button>
+            <a href="{{ url_for('agendar') }}" class="voltar">🔄 Nova reserva</a>
+        </div>
+    </div>
+
+    <script>
+        function baixarImagem() {
+            html2canvas(document.querySelector("#confirmacao")).then(canvas => {
+                const link = document.createElement("a");
+                link.download = "confirmacao_agendamento.png";
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>

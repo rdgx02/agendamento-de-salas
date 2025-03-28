@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendamento de Salas</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f2f4f8;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    form {
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 500px;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 10px;
+      display: block;
+    }
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .mensagem-erro {
+      color: #c0392b;
+      font-weight: bold;
+      margin-bottom: 20px;
+      background: #fcecec;
+      border: 1px solid #e0b4b4;
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 500px;
+    }
+    .mensagem-sucesso {
+      color: #27ae60;
+      font-weight: bold;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Agendar Sala de Reunião</h1>
+
+  <div id="erro" class="mensagem-erro {% if not aviso_sem_salas %}hidden{% endif %}">
+    😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.
+  </div>
+
+  <form method="POST">
+    <label>Nome:</label>
+    <input type="text" id="nome" name="nome" value="{{ request.form.nome or request.args.nome or '' }}" required />
+
+    <label>Data:</label>
+    <input type="date" name="data" id="data" value="{{ request.form.data or request.args.data or '' }}" required />
+
+    <label>Sala:</label>
+    <select name="sala" id="sala" disabled required>
+      <option disabled selected>Selecione a sala</option>
+      {% for sala in salas %}
+        <option value="{{ sala }}">{{ sala }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Horário de Início:</label>
+    <select name="horario_inicio" id="horario_inicio" disabled required>
+      <option disabled selected>Selecione um horário</option>
+    </select>
+
+    <label>Duração:</label>
+    <select name="duracao" id="duracao" disabled required>
+      <option disabled selected>Selecione uma duração</option>
+    </select>
+
+    <button type="submit">✅ Confirmar Agendamento</button>
+  </form>
+
+  {% if mensagem %}
+    <p class="mensagem-erro">{{ mensagem }}</p>
+  {% endif %}
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const dataInput = document.getElementById("data");
+      const salaSelect = document.getElementById("sala");
+      const horarioSelect = document.getElementById("horario_inicio");
+      const duracaoSelect = document.getElementById("duracao");
+      const erroBox = document.getElementById("erro");
+
+      const todasDuracoes = [
+        { label: "30 minutos", value: 30 },
+        { label: "1 hora", value: 60 },
+        { label: "1 hora e 30 minutos", value: 90 },
+        { label: "2 horas", value: 120 }
+      ];
+
+      function carregarSalas() {
+        const data = dataInput.value;
+        if (!data) return;
+
+        fetch(`/salas-disponiveis?data=${data}`)
+          .then(r => r.json())
+          .then(salas => {
+            salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
+            if (salas.length === 0) {
+              salaSelect.disabled = true;
+              horarioSelect.disabled = true;
+              duracaoSelect.disabled = true;
+              erroBox.classList.remove("hidden");
+              return;
+            }
+
+            erroBox.classList.add("hidden");
+            salas.forEach(sala => {
+              const opt = document.createElement("option");
+              opt.value = sala;
+              opt.text = sala;
+              salaSelect.appendChild(opt);
+            });
+            salaSelect.disabled = false;
+          });
+      }
+
+      function carregarHorarios() {
+        const sala = salaSelect.value;
+        const data = dataInput.value;
+        const duracao = 30;
+
+        fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`)
+          .then(r => r.json())
+          .then(horarios => {
+            horarioSelect.innerHTML = "<option disabled selected>Selecione um horário</option>";
+            horarios.forEach(h => {
+              const opt = document.createElement("option");
+              opt.value = h;
+              opt.text = h;
+              horarioSelect.appendChild(opt);
+            });
+            horarioSelect.disabled = false;
+            duracaoSelect.innerHTML = "<option disabled selected>Selecione uma duração</option>";
+            duracaoSelect.disabled = true;
+          });
+      }
+
+      function carregarDuracoes() {
+        const sala = salaSelect.value;
+        const data = dataInput.value;
+        const inicio = horarioSelect.value;
+
+        duracaoSelect.innerHTML = "";
+        duracaoSelect.disabled = false;
+
+        todasDuracoes.forEach(d => {
+          fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${d.value}`)
+            .then(r => r.json())
+            .then(horarios => {
+              if (horarios.includes(inicio)) {
+                const opt = document.createElement("option");
+                opt.value = d.value;
+                opt.text = d.label;
+                duracaoSelect.appendChild(opt);
+              }
+            });
+        });
+      }
+
+      const hoje = new Date().toISOString().split("T")[0];
+      dataInput.setAttribute("min", hoje);
+
+      dataInput.addEventListener("change", carregarSalas);
+      salaSelect.addEventListener("change", carregarHorarios);
+      horarioSelect.addEventListener("change", carregarDuracoes);
+    });
+  </script>
+</body>
+</html>
