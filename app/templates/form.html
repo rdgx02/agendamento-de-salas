@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Agendamento de Salas</title>
+  <meta http-equiv="Cache-Control" content="no-store" />
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -62,28 +63,28 @@
       border-radius: 8px;
       max-width: 500px;
     }
-    .mensagem-sucesso {
-      color: #27ae60;
-      font-weight: bold;
-    }
     .hidden {
       display: none;
     }
   </style>
+  <script>
+    // Impede cache ao voltar
+    if (performance.navigation.type === 2) {
+      location.href = "/";
+    }
+  </script>
 </head>
 <body>
   <h1>Agendar Sala de Reunião</h1>
 
-  <div id="erro" class="mensagem-erro {% if not aviso_sem_salas %}hidden{% endif %}">
-    😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.
-  </div>
+  <div id="erro" class="mensagem-erro hidden"></div>
 
   <form method="POST">
     <label>Nome:</label>
-    <input type="text" id="nome" name="nome" value="{{ request.form.nome or request.args.nome or '' }}" required />
+    <input type="text" id="nome" name="nome" required />
 
     <label>Data:</label>
-    <input type="date" name="data" id="data" value="{{ request.form.data or request.args.data or '' }}" required />
+    <input type="date" name="data" id="data" value="{{ hoje }}" required />
 
     <label>Sala:</label>
     <select name="sala" id="sala" disabled required>
@@ -106,10 +107,6 @@
     <button type="submit">✅ Confirmar Agendamento</button>
   </form>
 
-  {% if mensagem %}
-    <p class="mensagem-erro">{{ mensagem }}</p>
-  {% endif %}
-
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const dataInput = document.getElementById("data");
@@ -125,9 +122,31 @@
         { label: "2 horas", value: 120 }
       ];
 
+      function isWeekend(dateStr) {
+        const [ano, mes, dia] = dateStr.split("-");
+        const date = new Date(ano, mes - 1, dia);
+        return date.getDay() === 0 || date.getDay() === 6;
+      }
+
+      function limparErros() {
+        erroBox.textContent = "";
+        erroBox.classList.add("hidden");
+      }
+
       function carregarSalas() {
         const data = dataInput.value;
+        limparErros();
         if (!data) return;
+
+        if (isWeekend(data)) {
+          salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
+          salaSelect.disabled = true;
+          horarioSelect.disabled = true;
+          duracaoSelect.disabled = true;
+          erroBox.textContent = "🚫 Ops! As salas não estão disponíveis aos sábados e domingos.";
+          erroBox.classList.remove("hidden");
+          return;
+        }
 
         fetch(`/salas-disponiveis?data=${data}`)
           .then(r => r.json())
@@ -137,6 +156,7 @@
               salaSelect.disabled = true;
               horarioSelect.disabled = true;
               duracaoSelect.disabled = true;
+              erroBox.textContent = "😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.";
               erroBox.classList.remove("hidden");
               return;
             }
@@ -153,6 +173,7 @@
       }
 
       function carregarHorarios() {
+        limparErros();
         const sala = salaSelect.value;
         const data = dataInput.value;
         const duracao = 30;
@@ -174,6 +195,7 @@
       }
 
       function carregarDuracoes() {
+        limparErros();
         const sala = salaSelect.value;
         const data = dataInput.value;
         const inicio = horarioSelect.value;

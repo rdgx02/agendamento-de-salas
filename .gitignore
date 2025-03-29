@@ -1,0 +1,14 @@
+# Ambientes virtuais
+.venv/
+venv/
+
+# Arquivos compilados
+__pycache__/
+*.pyc
+
+# Banco de dados e exportações
+*.db
+*.csv
+
+# Imagens e arquivos gerados
+*.png

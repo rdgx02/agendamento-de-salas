@@ -1,27 +1,24 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file, make_response
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
 import csv
 
 app = Flask(__name__)
-app.secret_key = "agendamento123"
+app.secret_key = os.environ.get("SECRET_KEY", "dev123")
 
-# Caminho para o banco de dados na pasta "data"
 basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, '..', 'data', 'agendamentos.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath(db_path)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '../data/agendamentos.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
 salas_disponiveis = ["205", "214", "305"]
 
 class Agendamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     sala = db.Column(db.String(10), nullable=False)
-    data = db.Column(db.String(10), nullable=False)  # formato YYYY-MM-DD
+    data = db.Column(db.String(10), nullable=False)
     inicio = db.Column(db.DateTime, nullable=False)
     fim = db.Column(db.DateTime, nullable=False)
 
@@ -36,6 +33,9 @@ def gerar_horarios_disponiveis(sala, data, duracao):
     horarios = []
     agora = datetime.now()
     data_dt = datetime.strptime(data, "%Y-%m-%d")
+    if data_dt.weekday() in [5, 6]:
+        return []
+
     inicio = datetime.combine(data_dt.date(), datetime.strptime("08:00", "%H:%M").time())
     fim_limite = datetime.combine(data_dt.date(), datetime.strptime("18:00", "%H:%M").time())
     fim_maximo = fim_limite + timedelta(minutes=120)
@@ -52,15 +52,10 @@ def gerar_horarios_disponiveis(sala, data, duracao):
                 if verificar_disponibilidade(sala, data, inicio, fim_agendamento):
                     horarios.append(inicio.strftime("%H:%M"))
         inicio += timedelta(minutes=30)
-
     return horarios
 
 def salas_disponiveis_para_data(data, duracao):
-    disponiveis = []
-    for sala in salas_disponiveis:
-        if gerar_horarios_disponiveis(sala, data, duracao):
-            disponiveis.append(sala)
-    return disponiveis
+    return [sala for sala in salas_disponiveis if gerar_horarios_disponiveis(sala, data, duracao)]
 
 @app.template_filter('datetimeformat')
 def formatar_data(data_str):
@@ -74,12 +69,9 @@ def horarios_disponiveis():
     sala = request.args.get("sala")
     data = request.args.get("data")
     duracao = int(request.args.get("duracao", 30))
-
     if not sala or not data:
         return jsonify([])
-
-    horarios = gerar_horarios_disponiveis(sala, data, duracao)
-    return jsonify(horarios)
+    return jsonify(gerar_horarios_disponiveis(sala, data, duracao))
 
 @app.route("/salas-disponiveis")
 def salas_disponiveis_route():
@@ -92,21 +84,27 @@ def salas_disponiveis_route():
 def confirmado():
     mensagem = session.pop("mensagem_confirmacao", None)
     dados = session.pop("dados_confirmacao", None)
-    return render_template("confirmado.html", mensagem=mensagem, dados=dados)
+    if not dados:
+        return redirect(url_for("agendar"))
+
+    response = make_response(render_template("confirmado.html", mensagem=mensagem, dados=dados))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.route("/exportar")
 def exportar():
     agendamentos = Agendamento.query.all()
-    csv_path = os.path.join(basedir, '..', 'data', 'agendamentos_export.csv')
+    csv_path = os.path.join(basedir, "../data/agendamentos_export.csv")
     with open(csv_path, mode='w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["ID", "Nome", "Sala", "Data", "Início", "Fim"])
         for a in agendamentos:
             writer.writerow([a.id, a.nome, a.sala, a.data, a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")])
-    return send_file(os.path.abspath(csv_path), as_attachment=True)
+    return send_file(csv_path, as_attachment=True)
 
 @app.route("/", methods=["GET", "POST"])
 def agendar():
+    session.clear()
     mensagem = ""
     data = request.form.get("data") if request.method == "POST" else request.args.get("data")
     aviso_sem_salas = False
@@ -118,7 +116,9 @@ def agendar():
         if data_dt < date.today():
             mensagem = "Não é possível agendar para uma data que já passou."
             return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True, hoje=hoje)
-
+        if data_dt.weekday() in [5, 6]:
+            mensagem = "Não é possível agendar aos sábados ou domingos."
+            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True, hoje=hoje)
         salas_para_data = salas_disponiveis_para_data(data, 30)
         if not salas_para_data:
             aviso_sem_salas = True
@@ -162,8 +162,11 @@ def agendar():
         }
         return redirect(url_for("confirmado"))
 
-    return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+    response = make_response(render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
-# Criação do banco se necessário
-with app.app_context():
-    db.create_all()
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
