@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamentos</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 8px 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #f4f4f4; }
+        h1 { margin-bottom: 10px; }
+        a { text-decoration: none; color: #007BFF; }
+    </style>
+</head>
+<body>
+    <h1>Todos os Agendamentos</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Sala</th>
+                <th>Data</th>
+                <th>Início</th>
+                <th>Fim</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in agendamentos %}
+            <tr>
+                <td>{{ a.id }}</td>
+                <td>{{ a.nome }}</td>
+                <td>{{ a.sala }}</td>
+                <td>{{ a.data }}</td>
+                <td>{{ a.inicio.strftime('%H:%M') }}</td>
+                <td>{{ a.fim.strftime('%H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>
+        <a href="{{ url_for('agendar') }}">← Voltar para agendamento</a> |
+        <a href="{{ url_for('logout') }}" style="color: red;">Sair do admin</a>
+    </p>
+</body>
+</html>

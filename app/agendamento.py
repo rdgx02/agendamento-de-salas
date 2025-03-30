@@ -109,16 +109,15 @@ def agendar():
     data = request.form.get("data") if request.method == "POST" else request.args.get("data")
     aviso_sem_salas = False
     salas_para_data = []
-    hoje = date.today().strftime("%Y-%m-%d")
 
     if data:
         data_dt = datetime.strptime(data, "%Y-%m-%d").date()
         if data_dt < date.today():
             mensagem = "Não é possível agendar para uma data que já passou."
-            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True, hoje=hoje)
+            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True)
         if data_dt.weekday() in [5, 6]:
             mensagem = "Não é possível agendar aos sábados ou domingos."
-            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True, hoje=hoje)
+            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True)
         salas_para_data = salas_disponiveis_para_data(data, 30)
         if not salas_para_data:
             aviso_sem_salas = True
@@ -131,22 +130,22 @@ def agendar():
 
         if not horario_inicio:
             mensagem = "Você precisa selecionar um horário disponível antes de confirmar."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
 
         try:
             inicio_dt = datetime.strptime(f"{data} {horario_inicio}", "%Y-%m-%d %H:%M")
             fim_dt = inicio_dt + timedelta(minutes=duracao)
         except ValueError:
             mensagem = "Data ou horário inválido."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
 
         if inicio_dt < datetime.now():
             mensagem = "Não é possível agendar para um horário que já passou."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
 
         if not verificar_disponibilidade(sala, data, inicio_dt, fim_dt):
             mensagem = "Horário indisponível para essa sala."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
 
         novo_agendamento = Agendamento(nome=nome, sala=sala, data=data, inicio=inicio_dt, fim=fim_dt)
         db.session.add(novo_agendamento)
@@ -162,9 +161,37 @@ def agendar():
         }
         return redirect(url_for("confirmado"))
 
-    response = make_response(render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje))
+    response = make_response(render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas))
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
+@app.route("/agendamentos")
+def listar_agendamentos():
+    if session.get("admin_autorizado") != True:
+        return redirect(url_for("login_admin"))
+    agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
+    return render_template("agendamentos.html", agendamentos=agendamentos)
+
+@app.route("/admin", methods=["GET", "POST"])
+def login_admin():
+    if request.method == "POST":
+        senha = request.form.get("senha")
+        if senha == "minhasupersecreta":
+            session["admin_autorizado"] = True
+            return redirect(url_for("listar_agendamentos"))
+        else:
+            return "Senha incorreta"
+    return '''
+        <form method="post">
+            Senha: <input type="password" name="senha">
+            <input type="submit" value="Entrar">
+        </form>
+    '''
+
+@app.route("/logout")
+def logout():
+    session.pop("admin_autorizado", None)
+    return redirect(url_for("agendar"))
 
 if __name__ == "__main__":
     with app.app_context():
