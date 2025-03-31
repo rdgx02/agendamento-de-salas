@@ -6,18 +6,26 @@
   <title>Agendamento de Salas</title>
   <meta http-equiv="Cache-Control" content="no-store" />
   <style>
-    body {
+    body.oculto {
+      display: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: "Segoe UI", sans-serif;
       background: #f2f4f8;
-      margin: 0;
-      padding: 40px;
-      display: flex;
       flex-direction: column;
       align-items: center;
     }
+
     h1 {
       color: #2c3e50;
+      text-align: center;
+      margin-top: 40px;
     }
+
     form {
       background: #ffffff;
       padding: 30px 40px;
@@ -25,12 +33,15 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       width: 100%;
       max-width: 500px;
+      margin: auto;
     }
+
     label {
       font-weight: 600;
       margin-top: 10px;
       display: block;
     }
+
     input,
     select,
     button {
@@ -42,6 +53,7 @@
       border-radius: 6px;
       font-size: 1rem;
     }
+
     button {
       background-color: #3498db;
       color: white;
@@ -50,41 +62,43 @@
       border: none;
       transition: background-color 0.2s ease;
     }
+
     button:hover {
       background-color: #2980b9;
     }
+
     .mensagem-erro {
       color: #c0392b;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin: 20px auto;
       background: #fcecec;
       border: 1px solid #e0b4b4;
       padding: 12px;
       border-radius: 8px;
       max-width: 500px;
+      text-align: center;
     }
+
     .hidden {
       display: none;
     }
   </style>
-  <script>
-    // Impede cache ao voltar
-    if (performance.navigation.type === 2) {
-      location.href = "/";
-    }
-  </script>
 </head>
-<body>
+<body class="oculto">
   <h1>Agendar Sala de Reunião</h1>
 
-  <div id="erro" class="mensagem-erro hidden"></div>
+  {% if mensagem %}
+    <div id="erro" class="mensagem-erro">{{ mensagem }}</div>
+  {% else %}
+    <div id="erro" class="mensagem-erro hidden"></div>
+  {% endif %}
 
   <form method="POST">
     <label>Nome:</label>
     <input type="text" id="nome" name="nome" required />
 
     <label>Data:</label>
-    <input type="date" name="data" id="data" value="{{ hoje }}" required />
+    <input type="date" name="data" id="data" min="{{ hoje }}" required />
 
     <label>Sala:</label>
     <select name="sala" id="sala" disabled required>
@@ -108,122 +122,133 @@
   </form>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const dataInput = document.getElementById("data");
-      const salaSelect = document.getElementById("sala");
-      const horarioSelect = document.getElementById("horario_inicio");
-      const duracaoSelect = document.getElementById("duracao");
-      const erroBox = document.getElementById("erro");
+    const dataInput = document.getElementById("data");
+    const salaSelect = document.getElementById("sala");
+    const horarioSelect = document.getElementById("horario_inicio");
+    const duracaoSelect = document.getElementById("duracao");
+    const erroBox = document.getElementById("erro");
 
-      const todasDuracoes = [
-        { label: "30 minutos", value: 30 },
-        { label: "1 hora", value: 60 },
-        { label: "1 hora e 30 minutos", value: 90 },
-        { label: "2 horas", value: 120 }
-      ];
+    const todasDuracoes = [
+      { label: "30 minutos", value: 30 },
+      { label: "1 hora", value: 60 },
+      { label: "1 hora e 30 minutos", value: 90 },
+      { label: "2 horas", value: 120 }
+    ];
 
-      function isWeekend(dateStr) {
-        const [ano, mes, dia] = dateStr.split("-");
-        const date = new Date(ano, mes - 1, dia);
-        return date.getDay() === 0 || date.getDay() === 6;
+    function isWeekend(dateStr) {
+      const [ano, mes, dia] = dateStr.split("-");
+      const date = new Date(ano, mes - 1, dia);
+      return date.getDay() === 0 || date.getDay() === 6;
+    }
+
+    function limparErros() {
+      erroBox.textContent = "";
+      erroBox.classList.add("hidden");
+    }
+
+    function carregarSalas() {
+      const data = dataInput.value;
+      limparErros();
+      if (!data) return;
+
+      if (isWeekend(data)) {
+        salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
+        salaSelect.disabled = true;
+        horarioSelect.disabled = true;
+        duracaoSelect.disabled = true;
+        erroBox.textContent = "🚫 Ops! As salas não estão disponíveis aos sábados e domingos.";
+        erroBox.classList.remove("hidden");
+        return;
       }
 
-      function limparErros() {
-        erroBox.textContent = "";
-        erroBox.classList.add("hidden");
-      }
-
-      function carregarSalas() {
-        const data = dataInput.value;
-        limparErros();
-        if (!data) return;
-
-        if (isWeekend(data)) {
+      fetch(`/salas-disponiveis?data=${data}`)
+        .then(r => r.json())
+        .then(salas => {
           salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
-          salaSelect.disabled = true;
-          horarioSelect.disabled = true;
-          duracaoSelect.disabled = true;
-          erroBox.textContent = "🚫 Ops! As salas não estão disponíveis aos sábados e domingos.";
-          erroBox.classList.remove("hidden");
-          return;
-        }
+          if (salas.length === 0) {
+            salaSelect.disabled = true;
+            horarioSelect.disabled = true;
+            duracaoSelect.disabled = true;
+            erroBox.textContent = "😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.";
+            erroBox.classList.remove("hidden");
+            return;
+          }
 
-        fetch(`/salas-disponiveis?data=${data}`)
-          .then(r => r.json())
-          .then(salas => {
-            salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
-            if (salas.length === 0) {
-              salaSelect.disabled = true;
-              horarioSelect.disabled = true;
-              duracaoSelect.disabled = true;
-              erroBox.textContent = "😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.";
-              erroBox.classList.remove("hidden");
-              return;
-            }
-
-            erroBox.classList.add("hidden");
-            salas.forEach(sala => {
-              const opt = document.createElement("option");
-              opt.value = sala;
-              opt.text = sala;
-              salaSelect.appendChild(opt);
-            });
-            salaSelect.disabled = false;
+          erroBox.classList.add("hidden");
+          salas.forEach(sala => {
+            const opt = document.createElement("option");
+            opt.value = sala;
+            opt.text = sala;
+            salaSelect.appendChild(opt);
           });
-      }
+          salaSelect.disabled = false;
+        });
+    }
 
-      function carregarHorarios() {
-        limparErros();
-        const sala = salaSelect.value;
-        const data = dataInput.value;
-        const duracao = 30;
+    function carregarHorarios() {
+      limparErros();
+      const sala = salaSelect.value;
+      const data = dataInput.value;
+      const duracao = 30;
 
-        fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`)
+      fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`)
+        .then(r => r.json())
+        .then(horarios => {
+          horarioSelect.innerHTML = "<option disabled selected>Selecione um horário</option>";
+          horarios.forEach(h => {
+            const opt = document.createElement("option");
+            opt.value = h;
+            opt.text = h;
+            horarioSelect.appendChild(opt);
+          });
+          horarioSelect.disabled = false;
+          duracaoSelect.innerHTML = "<option disabled selected>Selecione uma duração</option>";
+          duracaoSelect.disabled = true;
+        });
+    }
+
+    function carregarDuracoes() {
+      limparErros();
+      const sala = salaSelect.value;
+      const data = dataInput.value;
+      const inicio = horarioSelect.value;
+
+      duracaoSelect.innerHTML = "";
+      duracaoSelect.disabled = false;
+
+      todasDuracoes.forEach(d => {
+        fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${d.value}`)
           .then(r => r.json())
           .then(horarios => {
-            horarioSelect.innerHTML = "<option disabled selected>Selecione um horário</option>";
-            horarios.forEach(h => {
+            if (horarios.includes(inicio)) {
               const opt = document.createElement("option");
-              opt.value = h;
-              opt.text = h;
-              horarioSelect.appendChild(opt);
-            });
-            horarioSelect.disabled = false;
-            duracaoSelect.innerHTML = "<option disabled selected>Selecione uma duração</option>";
-            duracaoSelect.disabled = true;
+              opt.value = d.value;
+              opt.text = d.label;
+              duracaoSelect.appendChild(opt);
+            }
           });
+      });
+    }
+
+    dataInput.addEventListener("change", carregarSalas);
+    salaSelect.addEventListener("change", carregarHorarios);
+    horarioSelect.addEventListener("change", carregarDuracoes);
+
+    window.addEventListener("pageshow", function (event) {
+      try {
+        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+        if (event.persisted || tipo === "back_forward") {
+          window.location.href = "/";
+        } else {
+          document.body.classList.remove("oculto");
+        }
+      } catch (e) {
+        document.body.classList.remove("oculto");
       }
-
-      function carregarDuracoes() {
-        limparErros();
-        const sala = salaSelect.value;
-        const data = dataInput.value;
-        const inicio = horarioSelect.value;
-
-        duracaoSelect.innerHTML = "";
-        duracaoSelect.disabled = false;
-
-        todasDuracoes.forEach(d => {
-          fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${d.value}`)
-            .then(r => r.json())
-            .then(horarios => {
-              if (horarios.includes(inicio)) {
-                const opt = document.createElement("option");
-                opt.value = d.value;
-                opt.text = d.label;
-                duracaoSelect.appendChild(opt);
-              }
-            });
-        });
-      }
-
-      const hoje = new Date().toISOString().split("T")[0];
-      dataInput.setAttribute("min", hoje);
-
-      dataInput.addEventListener("change", carregarSalas);
-      salaSelect.addEventListener("change", carregarHorarios);
-      horarioSelect.addEventListener("change", carregarDuracoes);
+      setTimeout(() => document.body.classList.remove("oculto"), 100);
     });
+
+    window.history.replaceState({}, document.title, "/");
   </script>
 </body>
 </html>

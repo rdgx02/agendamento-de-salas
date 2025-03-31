@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Acesso Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store">
+  <style>
+    body.oculto {
+      display: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px 50px;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      max-width: 360px;
+      margin: auto;
+      margin-top: 15%;
+    }
+
+    h2 {
+      font-size: 22px;
+      color: #1e293b;
+      margin-bottom: 24px;
+    }
+
+    input[type="password"], input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    input[type="submit"] {
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    input[type="submit"]:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body class="oculto">
+  <form class="login-container" method="post">
+    <h2>🔐 Acesso Admin</h2>
+    <input type="password" name="senha" placeholder="Digite a senha" required>
+    <input type="submit" value="Entrar">
+  </form>
+
+  <script>
+    window.addEventListener("pageshow", function (event) {
+      try {
+        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+        if (event.persisted || tipo === "back_forward") {
+          window.location.href = "/logout";
+        } else {
+          document.body.classList.remove("oculto");
+        }
+      } catch (e) {
+        document.body.classList.remove("oculto");
+      }
+      setTimeout(() => document.body.classList.remove("oculto"), 100);
+    });
+
+    window.history.replaceState({}, document.title, "/admin");
+  </script>
+</body>
+</html>

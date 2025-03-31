@@ -7,24 +7,31 @@
   <meta http-equiv="Cache-Control" content="no-store">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body {
+    body.oculto {
+      display: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: "Segoe UI", sans-serif;
       background: #f1f5f9;
-      margin: 0;
-      padding: 40px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
     }
+
     #confirmacao {
       background: #fff;
       padding: 40px 60px;
       border-radius: 16px;
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
       text-align: center;
-      transition: all 0.3s ease-in-out;
+      max-width: 500px;
+      width: 90%;
     }
+
     h1 {
       color: #22c55e;
       font-size: 24px;
@@ -34,10 +41,12 @@
       justify-content: center;
       gap: 10px;
     }
+
     h1::before {
       content: "✅";
       font-size: 28px;
     }
+
     .info {
       font-size: 18px;
       margin: 12px 0;
@@ -47,16 +56,20 @@
       gap: 8px;
       color: #334155;
     }
+
     .info strong {
       margin-right: 5px;
       color: #1e293b;
     }
+
     .btns {
       margin-top: 30px;
       display: flex;
       justify-content: center;
       gap: 12px;
+      flex-wrap: wrap;
     }
+
     button, a {
       padding: 12px 24px;
       font-size: 16px;
@@ -69,39 +82,37 @@
       align-items: center;
       gap: 8px;
     }
+
     .salvar {
       background: #3b82f6;
       color: white;
     }
+
     .salvar:hover {
       background: #2563eb;
     }
+
     .voltar {
       background: #e2e8f0;
       color: #111;
     }
+
     .voltar:hover {
       background: #cbd5e1;
     }
+
     .no-print {
       display: inline-block;
     }
+
     @media print {
       .no-print {
         display: none !important;
       }
     }
   </style>
-  <script>
-    window.addEventListener("pageshow", function(event) {
-      if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        window.location.href = "/";
-      }
-    });
-    window.history.replaceState({}, document.title, "/confirmado");
-  </script>
 </head>
-<body>
+<body class="oculto">
   <div id="confirmacao">
     <h1>Agendamento Confirmado!</h1>
 
@@ -123,7 +134,7 @@
       const confirmacao = document.getElementById("confirmacao");
       const botoes = document.querySelector(".btns");
       botoes.style.display = "none";
-      html2canvas(confirmacao, {backgroundColor: '#fff'}).then(canvas => {
+      html2canvas(confirmacao, { backgroundColor: '#fff' }).then(canvas => {
         const link = document.createElement("a");
         link.download = "confirmacao_agendamento.png";
         link.href = canvas.toDataURL("image/png");
@@ -131,6 +142,22 @@
         botoes.style.display = "flex";
       });
     }
+
+    window.addEventListener("pageshow", function (event) {
+      try {
+        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+        if (event.persisted || tipo === "back_forward") {
+          window.location.href = "/";
+        } else {
+          document.body.classList.remove("oculto");
+        }
+      } catch (e) {
+        document.body.classList.remove("oculto");
+      }
+      setTimeout(() => document.body.classList.remove("oculto"), 100);
+    });
+
+    window.history.replaceState({}, document.title, "/confirmado");
   </script>
 </body>
 </html>

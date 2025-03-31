@@ -1,4 +1,7 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file, make_response
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    session, send_file, make_response, jsonify
+)
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
@@ -7,11 +10,15 @@ import csv
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev123")
 
+# Caminho para o banco de dados
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '../data/agendamentos.db')
+db_path = os.path.join(basedir, "../data/agendamentos.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Salas fixas
 salas_disponiveis = ["205", "214", "305"]
 
 class Agendamento(db.Model):
@@ -22,17 +29,29 @@ class Agendamento(db.Model):
     inicio = db.Column(db.DateTime, nullable=False)
     fim = db.Column(db.DateTime, nullable=False)
 
+# Filtro para template
+@app.template_filter('datetimeformat')
+def formatar_data(data_str):
+    try:
+        return datetime.strptime(data_str, "%Y-%m-%d").strftime("%d/%m/%Y")
+    except:
+        return data_str
+
 def verificar_disponibilidade(sala, data, inicio, fim):
     agendamentos = Agendamento.query.filter_by(sala=sala, data=data).all()
-    for agendamento in agendamentos:
-        if not (fim <= agendamento.inicio or inicio >= agendamento.fim):
+    for a in agendamentos:
+        if not (fim <= a.inicio or inicio >= a.fim):
             return False
     return True
 
 def gerar_horarios_disponiveis(sala, data, duracao):
     horarios = []
     agora = datetime.now()
-    data_dt = datetime.strptime(data, "%Y-%m-%d")
+    try:
+        data_dt = datetime.strptime(data, "%Y-%m-%d")
+    except ValueError:
+        return []
+
     if data_dt.weekday() in [5, 6]:
         return []
 
@@ -57,13 +76,6 @@ def gerar_horarios_disponiveis(sala, data, duracao):
 def salas_disponiveis_para_data(data, duracao):
     return [sala for sala in salas_disponiveis if gerar_horarios_disponiveis(sala, data, duracao)]
 
-@app.template_filter('datetimeformat')
-def formatar_data(data_str):
-    try:
-        return datetime.strptime(data_str, "%Y-%m-%d").strftime("%d/%m/%Y")
-    except:
-        return data_str
-
 @app.route("/horarios-disponiveis")
 def horarios_disponiveis():
     sala = request.args.get("sala")
@@ -86,7 +98,6 @@ def confirmado():
     dados = session.pop("dados_confirmacao", None)
     if not dados:
         return redirect(url_for("agendar"))
-
     response = make_response(render_template("confirmado.html", mensagem=mensagem, dados=dados))
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
@@ -110,14 +121,18 @@ def agendar():
     aviso_sem_salas = False
     salas_para_data = []
 
+    hoje = date.today().strftime("%Y-%m-%d")
+
     if data:
-        data_dt = datetime.strptime(data, "%Y-%m-%d").date()
+        try:
+            data_dt = datetime.strptime(data, "%Y-%m-%d").date()
+        except ValueError:
+            return render_template("form.html", salas=[], mensagem="Data inválida.", aviso_sem_salas=True, hoje=hoje)
+
         if data_dt < date.today():
-            mensagem = "Não é possível agendar para uma data que já passou."
-            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True)
+            return render_template("form.html", salas=[], mensagem="Data já passou.", aviso_sem_salas=True, hoje=hoje)
         if data_dt.weekday() in [5, 6]:
-            mensagem = "Não é possível agendar aos sábados ou domingos."
-            return render_template("form.html", salas=[], mensagem=mensagem, aviso_sem_salas=True)
+            return render_template("form.html", salas=[], mensagem="Não é possível agendar aos sábados ou domingos.", aviso_sem_salas=True, hoje=hoje)
         salas_para_data = salas_disponiveis_para_data(data, 30)
         if not salas_para_data:
             aviso_sem_salas = True
@@ -129,23 +144,19 @@ def agendar():
         duracao = int(request.form["duracao"])
 
         if not horario_inicio:
-            mensagem = "Você precisa selecionar um horário disponível antes de confirmar."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
+            return render_template("form.html", salas=salas_para_data, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         try:
             inicio_dt = datetime.strptime(f"{data} {horario_inicio}", "%Y-%m-%d %H:%M")
             fim_dt = inicio_dt + timedelta(minutes=duracao)
         except ValueError:
-            mensagem = "Data ou horário inválido."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
+            return render_template("form.html", salas=salas_para_data, mensagem="Data ou horário inválido.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         if inicio_dt < datetime.now():
-            mensagem = "Não é possível agendar para um horário que já passou."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
+            return render_template("form.html", salas=salas_para_data, mensagem="Horário já passou.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         if not verificar_disponibilidade(sala, data, inicio_dt, fim_dt):
-            mensagem = "Horário indisponível para essa sala."
-            return render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas)
+            return render_template("form.html", salas=salas_para_data, mensagem="Horário indisponível para essa sala.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         novo_agendamento = Agendamento(nome=nome, sala=sala, data=data, inicio=inicio_dt, fim=fim_dt)
         db.session.add(novo_agendamento)
@@ -161,16 +172,21 @@ def agendar():
         }
         return redirect(url_for("confirmado"))
 
-    response = make_response(render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas))
+    response = make_response(render_template("form.html", salas=salas_para_data, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje))
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
-@app.route("/agendamentos")
+@app.route("/agendamentos", methods=["GET"])
 def listar_agendamentos():
     if session.get("admin_autorizado") != True:
         return redirect(url_for("login_admin"))
+
     agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
-    return render_template("agendamentos.html", agendamentos=agendamentos)
+    response = make_response(render_template("agendamentos.html", agendamentos=agendamentos))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.route("/admin", methods=["GET", "POST"])
 def login_admin():
@@ -181,18 +197,24 @@ def login_admin():
             return redirect(url_for("listar_agendamentos"))
         else:
             return "Senha incorreta"
-    return '''
-        <form method="post">
-            Senha: <input type="password" name="senha">
-            <input type="submit" value="Entrar">
-        </form>
-    '''
+    return render_template("login_admin.html")
 
 @app.route("/logout")
 def logout():
-    session.pop("admin_autorizado", None)
-    return redirect(url_for("agendar"))
+    session.clear()
+    return redirect(url_for("login_admin"))
 
+@app.route("/cancelar/<int:id>", methods=["POST"])
+def cancelar_agendamento_admin(id):
+    if session.get("admin_autorizado") != True:
+        return redirect(url_for("login_admin"))
+
+    agendamento = Agendamento.query.get_or_404(id)
+    db.session.delete(agendamento)
+    db.session.commit()
+    return redirect(url_for("listar_agendamentos"))
+
+# Apenas necessário se rodar diretamente
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
