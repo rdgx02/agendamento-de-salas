@@ -1,254 +1,221 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agendamento de Salas</title>
-  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta charset="UTF-8">
+  <title>Agendamento de Sala</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body.oculto {
-      display: none;
-    }
-
-    html, body {
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8fafc;
       margin: 0;
       padding: 0;
-      height: 100%;
-      font-family: "Segoe UI", sans-serif;
-      background: #f2f4f8;
-      flex-direction: column;
-      align-items: center;
+      text-align: center;
     }
 
     h1 {
-      color: #2c3e50;
-      text-align: center;
-      margin-top: 40px;
+      color: #1e293b;
+      margin: 30px 0 10px;
+      font-size: 24px;
     }
 
     form {
-      background: #ffffff;
-      padding: 30px 40px;
+      background: white;
+      padding: 24px;
+      margin: 20px auto;
+      max-width: 400px;
       border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-      width: 100%;
-      max-width: 500px;
-      margin: auto;
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
     }
 
     label {
-      font-weight: 600;
-      margin-top: 10px;
       display: block;
+      text-align: left;
+      margin: 12px 0 6px;
+      font-weight: 500;
+      color: #334155;
     }
 
-    input,
-    select,
-    button {
+    input, select, button {
       width: 100%;
       padding: 10px;
-      margin-top: 6px;
-      margin-bottom: 16px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      box-sizing: border-box;
     }
 
     button {
-      background-color: #3498db;
+      background-color: #3b82f6;
       color: white;
-      font-weight: bold;
-      cursor: pointer;
       border: none;
-      transition: background-color 0.2s ease;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     button:hover {
-      background-color: #2980b9;
+      background-color: #2563eb;
     }
 
-    .mensagem-erro {
-      color: #c0392b;
+    .mensagem {
+      color: #dc2626;
       font-weight: bold;
-      margin: 20px auto;
-      background: #fcecec;
-      border: 1px solid #e0b4b4;
-      padding: 12px;
-      border-radius: 8px;
-      max-width: 500px;
-      text-align: center;
+      margin-top: 10px;
     }
 
-    .hidden {
-      display: none;
+    .consulta {
+      margin-top: 40px;
+    }
+
+    .consulta input {
+      width: 240px;
+    }
+
+    .consulta button {
+      width: auto;
+      padding: 10px 16px;
+    }
+
+    @media (max-width: 500px) {
+      form {
+        margin: 12px;
+      }
+
+      .consulta input {
+        width: 100%;
+      }
+
+      .consulta form {
+        flex-direction: column;
+        gap: 8px;
+      }
     }
   </style>
 </head>
-<body class="oculto">
-  <h1>Agendar Sala de Reunião</h1>
+<body>
 
-  {% if mensagem %}
-    <div id="erro" class="mensagem-erro">{{ mensagem }}</div>
-  {% else %}
-    <div id="erro" class="mensagem-erro hidden"></div>
-  {% endif %}
+  <h1>📅 Agendamento de Sala</h1>
 
   <form method="POST">
-    <label>Nome:</label>
-    <input type="text" id="nome" name="nome" required />
+    <label for="nome">Nome completo:</label>
+    <input type="text" id="nome" name="nome" required>
 
-    <label>Data:</label>
-    <input type="date" name="data" id="data" min="{{ hoje }}" required />
+    <label for="data">Data:</label>
+    <input type="date" id="data" name="data" min="{{ hoje }}" value="{{ request.form.data or request.args.data }}" required>
 
-    <label>Sala:</label>
-    <select name="sala" id="sala" disabled required>
-      <option disabled selected>Selecione a sala</option>
-      {% for sala in salas %}
-        <option value="{{ sala }}">{{ sala }}</option>
-      {% endfor %}
+    <label for="sala">Sala:</label>
+    <select id="sala" name="sala" required disabled></select>
+
+    <label for="horario_inicio">Horário de Início:</label>
+    <select id="horario_inicio" name="horario_inicio" required disabled></select>
+
+    <label for="duracao">Duração:</label>
+    <select id="duracao" name="duracao" required>
+      <option value="30">30 minutos</option>
+      <option value="60">1 hora</option>
+      <option value="90">1h30</option>
+      <option value="120">2 horas</option>
     </select>
 
-    <label>Horário de Início:</label>
-    <select name="horario_inicio" id="horario_inicio" disabled required>
-      <option disabled selected>Selecione um horário</option>
-    </select>
+    <button type="submit">Reservar</button>
 
-    <label>Duração:</label>
-    <select name="duracao" id="duracao" disabled required>
-      <option disabled selected>Selecione uma duração</option>
-    </select>
-
-    <button type="submit">✅ Confirmar Agendamento</button>
+    {% if mensagem %}
+      <div class="mensagem">{{ mensagem }}</div>
+    {% endif %}
   </form>
 
+  <!-- Alerta dinâmico de datas e disponibilidade -->
+  <div id="alerta" class="mensagem" style="display: none;"></div>
+
+  <!-- Campo de consulta por nome -->
+  <div class="consulta">
+    <h3>🔍 Consultar meus agendamentos</h3>
+    <form method="GET" action="{{ url_for('meus_agendamentos') }}" style="display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+      <input type="text" name="nome" placeholder="Digite seu nome completo" required
+             style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;">
+      <button type="submit">Ver</button>
+    </form>
+  </div>
+
   <script>
-    const dataInput = document.getElementById("data");
-    const salaSelect = document.getElementById("sala");
-    const horarioSelect = document.getElementById("horario_inicio");
-    const duracaoSelect = document.getElementById("duracao");
-    const erroBox = document.getElementById("erro");
+    const dataInput = document.getElementById('data');
+    const salaSelect = document.getElementById('sala');
+    const horarioSelect = document.getElementById('horario_inicio');
+    const duracaoSelect = document.getElementById('duracao');
+    const alerta = document.getElementById('alerta');
 
-    const todasDuracoes = [
-      { label: "30 minutos", value: 30 },
-      { label: "1 hora", value: 60 },
-      { label: "1 hora e 30 minutos", value: 90 },
-      { label: "2 horas", value: 120 }
-    ];
-
-    function isWeekend(dateStr) {
-      const [ano, mes, dia] = dateStr.split("-");
-      const date = new Date(ano, mes - 1, dia);
-      return date.getDay() === 0 || date.getDay() === 6;
-    }
-
-    function limparErros() {
-      erroBox.textContent = "";
-      erroBox.classList.add("hidden");
-    }
-
-    function carregarSalas() {
+    dataInput.addEventListener('change', async () => {
       const data = dataInput.value;
-      limparErros();
-      if (!data) return;
+      const dataSelecionada = new Date(data);
+      const diaSemana = dataSelecionada.getUTCDay(); // 0 = domingo, 6 = sábado
 
-      if (isWeekend(data)) {
-        salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
+      // Se for sábado ou domingo, mostrar alerta e desativar campos
+      if (diaSemana === 0 || diaSemana === 6) {
+        alerta.textContent = "⚠️ Não é possível agendar aos sábados ou domingos.";
+        alerta.style.display = "block";
+        salaSelect.innerHTML = '';
+        horarioSelect.innerHTML = '';
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
-        duracaoSelect.disabled = true;
-        erroBox.textContent = "🚫 Ops! As salas não estão disponíveis aos sábados e domingos.";
-        erroBox.classList.remove("hidden");
         return;
       }
 
-      fetch(`/salas-disponiveis?data=${data}`)
-        .then(r => r.json())
-        .then(salas => {
-          salaSelect.innerHTML = "<option disabled selected>Selecione a sala</option>";
-          if (salas.length === 0) {
-            salaSelect.disabled = true;
-            horarioSelect.disabled = true;
-            duracaoSelect.disabled = true;
-            erroBox.textContent = "😕 Poxa, uma pena! Não temos mais salas/horários disponíveis para essa data.";
-            erroBox.classList.remove("hidden");
-            return;
-          }
+      alerta.style.display = "none";
 
-          erroBox.classList.add("hidden");
-          salas.forEach(sala => {
-            const opt = document.createElement("option");
-            opt.value = sala;
-            opt.text = sala;
-            salaSelect.appendChild(opt);
-          });
-          salaSelect.disabled = false;
+      // Atualiza salas
+      const salaResponse = await fetch(`/salas-disponiveis?data=${data}`);
+      const salas = await salaResponse.json();
+
+      salaSelect.innerHTML = '';
+      if (salas.length > 0) {
+        salas.forEach(sala => {
+          const option = document.createElement('option');
+          option.value = sala;
+          option.textContent = sala;
+          salaSelect.appendChild(option);
         });
-    }
-
-    function carregarHorarios() {
-      limparErros();
-      const sala = salaSelect.value;
-      const data = dataInput.value;
-      const duracao = 30;
-
-      fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`)
-        .then(r => r.json())
-        .then(horarios => {
-          horarioSelect.innerHTML = "<option disabled selected>Selecione um horário</option>";
-          horarios.forEach(h => {
-            const opt = document.createElement("option");
-            opt.value = h;
-            opt.text = h;
-            horarioSelect.appendChild(opt);
-          });
-          horarioSelect.disabled = false;
-          duracaoSelect.innerHTML = "<option disabled selected>Selecione uma duração</option>";
-          duracaoSelect.disabled = true;
-        });
-    }
-
-    function carregarDuracoes() {
-      limparErros();
-      const sala = salaSelect.value;
-      const data = dataInput.value;
-      const inicio = horarioSelect.value;
-
-      duracaoSelect.innerHTML = "";
-      duracaoSelect.disabled = false;
-
-      todasDuracoes.forEach(d => {
-        fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${d.value}`)
-          .then(r => r.json())
-          .then(horarios => {
-            if (horarios.includes(inicio)) {
-              const opt = document.createElement("option");
-              opt.value = d.value;
-              opt.text = d.label;
-              duracaoSelect.appendChild(opt);
-            }
-          });
-      });
-    }
-
-    dataInput.addEventListener("change", carregarSalas);
-    salaSelect.addEventListener("change", carregarHorarios);
-    horarioSelect.addEventListener("change", carregarDuracoes);
-
-    window.addEventListener("pageshow", function (event) {
-      try {
-        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
-        if (event.persisted || tipo === "back_forward") {
-          window.location.href = "/";
-        } else {
-          document.body.classList.remove("oculto");
-        }
-      } catch (e) {
-        document.body.classList.remove("oculto");
+        salaSelect.disabled = false;
+        carregarHorarios(); // carregar para a primeira sala automaticamente
+      } else {
+        salaSelect.disabled = true;
+        horarioSelect.disabled = true;
+        horarioSelect.innerHTML = '';
+        alerta.textContent = "⚠️ Nenhuma sala disponível para a data selecionada.";
+        alerta.style.display = "block";
       }
-      setTimeout(() => document.body.classList.remove("oculto"), 100);
     });
 
-    window.history.replaceState({}, document.title, "/");
+    salaSelect.addEventListener('change', carregarHorarios);
+    duracaoSelect.addEventListener('change', carregarHorarios);
+
+    async function carregarHorarios() {
+      const sala = salaSelect.value;
+      const data = dataInput.value;
+      const duracao = duracaoSelect.value;
+
+      if (!sala || !data) return;
+
+      const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
+      const horarios = await response.json();
+
+      horarioSelect.innerHTML = '';
+      if (horarios.length > 0) {
+        horarios.forEach(h => {
+          const option = document.createElement('option');
+          option.value = h;
+          option.textContent = h;
+          horarioSelect.appendChild(option);
+        });
+        horarioSelect.disabled = false;
+        alerta.style.display = "none";
+      } else {
+        horarioSelect.disabled = true;
+        alerta.textContent = "⚠️ Nenhum horário disponível para a sala selecionada.";
+        alerta.style.display = "block";
+      }
+    }
   </script>
+
 </body>
 </html>

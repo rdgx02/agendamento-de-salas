@@ -4,160 +4,122 @@
   <meta charset="UTF-8">
   <title>Agendamento Confirmado</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-store">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body.oculto {
-      display: none;
-    }
-
-    html, body {
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8fafc;
       margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: "Segoe UI", sans-serif;
-      background: #f1f5f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #confirmacao {
-      background: #fff;
-      padding: 40px 60px;
-      border-radius: 16px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      padding: 20px;
       text-align: center;
-      max-width: 500px;
-      width: 90%;
     }
 
     h1 {
-      color: #22c55e;
-      font-size: 24px;
-      margin-bottom: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      color: #16a34a;
+      margin-bottom: 12px;
     }
 
-    h1::before {
-      content: "✅";
-      font-size: 28px;
-    }
-
-    .info {
-      font-size: 18px;
-      margin: 12px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      color: #334155;
-    }
-
-    .info strong {
-      margin-right: 5px;
-      color: #1e293b;
-    }
-
-    .btns {
-      margin-top: 30px;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    button, a {
-      padding: 12px 24px;
+    .mensagem-sucesso {
+      color: #16a34a;
+      margin-bottom: 20px;
       font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
     }
 
-    .salvar {
+    .card {
+      background: #e0fdf4;
+      border: 2px solid #22c55e;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      margin: 0 auto 20px;
+      text-align: left;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .card p {
+      margin: 6px 0;
+      font-size: 15px;
+      color: #065f46;
+    }
+
+    .card p strong {
+      color: #065f46;
+    }
+
+    .botoes {
+      margin-top: 12px;
+    }
+
+    .botoes button {
       background: #3b82f6;
       color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0 6px;
     }
 
-    .salvar:hover {
+    .botoes button:hover {
       background: #2563eb;
     }
 
-    .voltar {
-      background: #e2e8f0;
-      color: #111;
+    .nova-reserva {
+      background-color: #e5e7eb;
+      color: #1e293b;
     }
 
-    .voltar:hover {
-      background: #cbd5e1;
+    .nova-reserva:hover {
+      background-color: #d1d5db;
     }
 
-    .no-print {
-      display: inline-block;
-    }
-
-    @media print {
-      .no-print {
-        display: none !important;
-      }
+    .obs {
+      font-size: 12px;
+      color: #475569;
+      margin-top: 10px;
     }
   </style>
 </head>
-<body class="oculto">
-  <div id="confirmacao">
-    <h1>Agendamento Confirmado!</h1>
+<body>
 
-    {% if dados %}
-      <div class="info">👤 <strong>Nome:</strong> {{ dados.nome }}</div>
-      <div class="info">🏢 <strong>Sala:</strong> {{ dados.sala }}</div>
-      <div class="info">📅 <strong>Data:</strong> {{ dados.data | datetimeformat }}</div>
-      <div class="info">⏰ <strong>Horário:</strong> {{ dados.inicio }} às {{ dados.fim }}</div>
-    {% endif %}
+  <h1>✅ Agendamento Confirmado!</h1>
 
-    <div class="btns no-print">
-      <button class="salvar" onclick="baixarImagem()">💾 Salvar confirmação</button>
-      <a href="{{ url_for('agendar') }}" class="voltar">🔄 Nova reserva</a>
+  {% if mensagem %}
+    <p class="mensagem-sucesso">{{ mensagem }}</p>
+  {% endif %}
+
+  {% if dados %}
+    <div class="card" id="confirmacao">
+      <p><strong>👤 Nome:</strong> {{ dados.nome }}</p>
+      <p><strong>🏫 Sala:</strong> {{ dados.sala }}</p>
+      <p><strong>📅 Data:</strong> {{ dados.data }}</p>
+      <p><strong>🕓 Início:</strong> {{ dados.inicio }}</p>
+      <p><strong>⏳ Fim:</strong> {{ dados.fim }}</p>
+      <p><strong>🎫 Ticket de Confirmação:</strong> #{{ dados.ticket }}</p>
     </div>
-  </div>
 
+    <div class="botoes">
+      <button onclick="salvarImagem()">Salvar Confirmação</button>
+      <a href="{{ url_for('agendar') }}">
+        <button class="nova-reserva">Nova Reserva</button>
+      </a>
+    </div>
+
+    <p class="obs">Guarde este número. Ele será necessário caso queira cancelar sua reserva.</p>
+  {% endif %}
+
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
-    function baixarImagem() {
-      const confirmacao = document.getElementById("confirmacao");
-      const botoes = document.querySelector(".btns");
-      botoes.style.display = "none";
-      html2canvas(confirmacao, { backgroundColor: '#fff' }).then(canvas => {
-        const link = document.createElement("a");
-        link.download = "confirmacao_agendamento.png";
-        link.href = canvas.toDataURL("image/png");
+    function salvarImagem() {
+      const card = document.getElementById('confirmacao');
+      html2canvas(card).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'confirmacao.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
-        botoes.style.display = "flex";
       });
     }
-
-    window.addEventListener("pageshow", function (event) {
-      try {
-        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
-        if (event.persisted || tipo === "back_forward") {
-          window.location.href = "/";
-        } else {
-          document.body.classList.remove("oculto");
-        }
-      } catch (e) {
-        document.body.classList.remove("oculto");
-      }
-      setTimeout(() => document.body.classList.remove("oculto"), 100);
-    });
-
-    window.history.replaceState({}, document.title, "/confirmado");
   </script>
+
 </body>
 </html>

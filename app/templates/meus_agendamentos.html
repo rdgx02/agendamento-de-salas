@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meus Agendamentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h1 {
+      color: #1e293b;
+      margin: 30px 0 20px;
+      font-size: 24px;
+    }
+
+    .card {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 12px auto;
+      max-width: 400px;
+      text-align: left;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .card p {
+      margin: 6px 0;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .card p span {
+      font-weight: bold;
+    }
+
+    form.cancelar-form {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+    }
+
+    button {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #dc2626;
+    }
+
+    .erro-ticket {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        margin: 12px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🗒️ Meus Agendamentos</h1>
+
+  {% if agendamentos %}
+    {% for a in agendamentos %}
+      <div class="card">
+        <p><span>👤 Nome:</span> {{ a.nome }}</p>
+        <p><span>🏫 Sala:</span> {{ a.sala }}</p>
+        <p><span>📅 Data:</span> {{ a.data_formatada }}</p>
+        <p><span>🕓 Início:</span> {{ a.inicio.strftime('%H:%M') }}</p>
+        <p><span>⏳ Fim:</span> {{ a.fim.strftime('%H:%M') }}</p>
+
+        <form class="cancelar-form" method="POST" action="{{ url_for('cancelar_por_ticket', id=a.id) }}">
+          <input type="text" name="ticket" placeholder="Digite o ticket de confirmação" required>
+          <button type="submit">Cancelar</button>
+          {% if a.erro_ticket %}
+            <div class="erro-ticket">{{ a.erro_ticket }}</div>
+          {% endif %}
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p style="color: #475569;">Nenhum agendamento encontrado para esse nome.</p>
+  {% endif %}
+
+</body>
+</html>

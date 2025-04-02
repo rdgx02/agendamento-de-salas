@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Agendamento Cancelado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 80px auto;
+      background-color: #ecfdf5;
+      border: 2px solid #22c55e;
+      border-radius: 12px;
+      padding: 32px 24px;
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.03);
+    }
+
+    h1 {
+      color: #16a34a;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #334155;
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    .btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>✅ Agendamento cancelado com sucesso!</h1>
+    <p>Você pode fazer uma nova reserva se desejar.</p>
+    <a href="{{ url_for('agendar') }}">
+      <button class="btn">Nova Reserva</button>
+    </a>
+  </div>
+
+</body>
+</html>

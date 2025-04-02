@@ -94,6 +94,16 @@
     .cancelar-btn:hover {
       background: #dc2626;
     }
+
+    @media (max-width: 768px) {
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
   </style>
 </head>
 <body class="oculto">
@@ -109,6 +119,7 @@
         <th><input type="text" placeholder="🔍 Data" onkeyup="filtrarTabela(3)"></th>
         <th><input type="text" placeholder="🔍 Início" onkeyup="filtrarTabela(4)"></th>
         <th><input type="text" placeholder="🔍 Fim" onkeyup="filtrarTabela(5)"></th>
+        <th><input type="text" placeholder="🔍 Ticket" onkeyup="filtrarTabela(6)"></th>
         <th>Ações</th>
       </tr>
       <tr>
@@ -118,6 +129,7 @@
         <th>Data</th>
         <th>Início</th>
         <th>Fim</th>
+        <th>🎫 Ticket</th>
         <th></th>
       </tr>
     </thead>
@@ -127,9 +139,10 @@
         <td>{{ a.id }}</td>
         <td>{{ a.nome }}</td>
         <td>{{ a.sala }}</td>
-        <td>{{ a.data }}</td>
+        <td>{{ a.data_formatada }}</td>
         <td>{{ a.inicio.strftime('%H:%M') }}</td>
         <td>{{ a.fim.strftime('%H:%M') }}</td>
+        <td>#{{ a.ticket_formatado }}</td>
         <td>
           <form method="POST" action="{{ url_for('cancelar_agendamento_admin', id=a.id) }}" onsubmit="return confirm('Tem certeza que deseja cancelar este agendamento?');">
             <button type="submit" class="cancelar-btn">Cancelar</button>

@@ -1,14 +1,39 @@
-# Ambientes virtuais
-.venv/
+# ░█▀▀░█░█░█▀█░█▀█░▀█▀░█░█░█▀▀
+# ░█░█░█░█░█▀▀░█▀▀░░█░░█░█░█▀▀
+# ░▀▀▀░▀▀▀░▀░░░▀░░░░▀░░▀▀▀░▀▀▀
+
+# ──────────────────────────────
+# ░ Ambientes virtuais
+# ──────────────────────────────
 venv/
+.venv/
 
-# Arquivos compilados
+# ──────────────────────────────
+# ░ Arquivos compilados Python
+# ──────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Banco de dados e exportações
+# ──────────────────────────────
+# ░ Banco de dados e exportações
+# ──────────────────────────────
 *.db
 *.csv
 
-# Imagens e arquivos gerados
+# ──────────────────────────────
+# ░ Arquivos temporários e gerados
+# ──────────────────────────────
 *.png
+*.pdf
+*.log
+
+# ──────────────────────────────
+# ░ Configurações locais do VSCode (opcional)
+# ──────────────────────────────
+.vscode/
+
+# ──────────────────────────────
+# ░ Outros
+# ──────────────────────────────
+*.sqlite3
+.DS_Store
