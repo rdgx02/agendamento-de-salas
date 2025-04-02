@@ -1,101 +1,100 @@
-# Agendamento de Salas
+# 🗓️ Sistema de Agendamento de Salas
 
-Sistema simples e eficiente para agendamento de salas de reunião. Desenvolvido com Python, Flask e SQLite.
-
----
-
-## 📄 Visão Geral
-Permite que usuários reservem salas de reunião com data, horário e duração, respeitando regras como:
-
-- Não permite agendar para datas passadas
-- Bloqueia finais de semana (sábado e domingo)
-- Garante que uma sala não tenha choques de horário
-- Mostra mensagens de erro claras
-- Painel administrativo para visualização e cancelamento de reservas
+Este projeto é um sistema simples e funcional para agendamento de salas. Foi desenvolvido com **Flask** e **SQLite**, com foco em usabilidade mobile e praticidade para ambientes internos, como empresas, escolas ou coworkings.
 
 ---
 
-## 📁 Estrutura do Projeto
-```
-agendamento-de-salas/
-├── agendamento.py
-├── gerar_qrcode_fixo.py
-├── templates/
-│   ├── agendamentos.html
-│   ├── confirmado.html
-│   ├── form.html
-│   └── login_admin.html
-├── data/
-│   ├── agendamentos.db
-│   └── agendamentos_export.csv
-├── static/
-├── run.py
-├── requirements.txt
-├── README.md
-└── .gitignore
-```
+## 🚀 Funcionalidades
+
+- 📅 Reservar salas disponíveis por data, horário e duração
+- 🔒 Área administrativa com login protegido por senha
+- 📋 Listagem de todos os agendamentos
+- ❌ Cancelamento por ticket (apenas com código de confirmação)
+- 🔍 Consulta de agendamentos por nome
+- 📥 Exportação de todos os agendamentos para CSV
+- ✅ Proteção contra agendamentos em finais de semana
+- 📱 Interface amigável para celular
 
 ---
 
-## 🚀 Como Executar Localmente
+## ⚙️ Como rodar localmente
 
-### 1. Clone o repositório
+### Pré-requisitos:
+- Python 3.10+
+- Git
+
+### Passo a passo:
+
+1. Clone o repositório:
 ```bash
 git clone https://github.com/rdgx02/agendamento-de-salas.git
 cd agendamento-de-salas
 ```
 
-### 2. Crie um ambiente virtual (opcional, mas recomendado)
+2. Crie o ambiente virtual:
 ```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # macOS/Linux
 ```
 
-### 3. Instale as dependências
+3. Ative o ambiente virtual:
+- No PowerShell:
+```bash
+.\venv\Scripts\Activate.ps1
+```
+- No CMD:
+```bash
+venv\Scripts\activate.bat
+```
+
+4. Instale as dependências:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Rode o projeto
+5. Execute o sistema:
 ```bash
-python run.py
+python app/agendamento.py
 ```
 
-Acesse: [http://localhost:5000](http://localhost:5000)
+6. Acesse no navegador:
+```
+http://127.0.0.1:5000
+```
 
 ---
 
-## 🔒 Acesso Admin
+## 🔐 Acesso Admin
 
-- Acesse: [http://localhost:5000/admin](http://localhost:5000/admin)
+- URL: `/admin`
 - Senha padrão: `minhasupersecreta`
 
 ---
 
-## 🎨 Prints
-### Formulário
-![Formulário](https://user-images.githubusercontent.com/rdgx02/formulario.png)
-
-### Confirmação
-![Confirmação](https://user-images.githubusercontent.com/rdgx02/confirmado.png)
-
-### Painel Admin
-![Admin](https://user-images.githubusercontent.com/rdgx02/painel.png)
-
-> (Se preferir, posso gerar essas imagens e te enviar os links ou README atualizado com elas.)
-
----
-
-## 🚜 Futuras Melhorias
-- Autenticação por login
-- Cancelamento via QR Code
-- Integração com e-mail
-- Bloqueio automático de feriados nacionais e regionais (RJ)
+## 📁 Estrutura do projeto
+```
+├── app
+│   ├── agendamento.py
+│   ├── gerar_qrcode_fixo.py
+│   └── templates
+├── data
+│   └── agendamentos.db (não vai pro GitHub)
+├── static (opcional)
+├── venv (ignorado)
+├── run.py
+├── iniciar.bat (opcional)
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## ❤️ Feito por [@rdgx02](https://github.com/rdgx02)
+## 👤 Autor
 
-Sistema de agendamento criado com foco em aprendizado prático e utilidade real no ambiente corporativo ou institucional.
+Desenvolvido por [rdgx02](https://github.com/rdgx02) 💻
+
+---
+
+## 📌 Licença
+
+Este projeto está sob a licença MIT. Sinta-se livre para usar, modificar e compartilhar.
 
