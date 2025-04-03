@@ -46,6 +46,16 @@
       box-sizing: border-box;
     }
 
+    input[readonly], input[disabled] {
+      background-color: #e5e7eb;
+      cursor: default;
+    }
+
+    input.noclick {
+      pointer-events: none;
+      background-color: #e5e7eb;
+    }
+
     button {
       background-color: #3b82f6;
       color: white;
@@ -111,12 +121,7 @@
     <select id="horario_inicio" name="horario_inicio" required disabled></select>
 
     <label for="duracao">Duração:</label>
-    <select id="duracao" name="duracao" required>
-      <option value="30">30 minutos</option>
-      <option value="60">1 hora</option>
-      <option value="90">1h30</option>
-      <option value="120">2 horas</option>
-    </select>
+    <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1" class="noclick">
 
     <button type="submit">Reservar</button>
 
@@ -125,10 +130,8 @@
     {% endif %}
   </form>
 
-  <!-- Alerta dinâmico de datas e disponibilidade -->
   <div id="alerta" class="mensagem" style="display: none;"></div>
 
-  <!-- Campo de consulta por nome -->
   <div class="consulta">
     <h3>🔍 Consultar meus agendamentos</h3>
     <form method="GET" action="{{ url_for('meus_agendamentos') }}" style="display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
@@ -142,15 +145,13 @@
     const dataInput = document.getElementById('data');
     const salaSelect = document.getElementById('sala');
     const horarioSelect = document.getElementById('horario_inicio');
-    const duracaoSelect = document.getElementById('duracao');
     const alerta = document.getElementById('alerta');
 
     dataInput.addEventListener('change', async () => {
       const data = dataInput.value;
       const dataSelecionada = new Date(data);
-      const diaSemana = dataSelecionada.getUTCDay(); // 0 = domingo, 6 = sábado
+      const diaSemana = dataSelecionada.getUTCDay();
 
-      // Se for sábado ou domingo, mostrar alerta e desativar campos
       if (diaSemana === 0 || diaSemana === 6) {
         alerta.textContent = "⚠️ Não é possível agendar aos sábados ou domingos.";
         alerta.style.display = "block";
@@ -163,12 +164,17 @@
 
       alerta.style.display = "none";
 
-      // Atualiza salas
       const salaResponse = await fetch(`/salas-disponiveis?data=${data}`);
       const salas = await salaResponse.json();
 
       salaSelect.innerHTML = '';
       if (salas.length > 0) {
+        const defaultOption = document.createElement('option');
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        defaultOption.textContent = 'Selecione uma sala';
+        salaSelect.appendChild(defaultOption);
+
         salas.forEach(sala => {
           const option = document.createElement('option');
           option.value = sala;
@@ -176,7 +182,8 @@
           salaSelect.appendChild(option);
         });
         salaSelect.disabled = false;
-        carregarHorarios(); // carregar para a primeira sala automaticamente
+        horarioSelect.disabled = true;
+        horarioSelect.innerHTML = '';
       } else {
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
@@ -187,20 +194,27 @@
     });
 
     salaSelect.addEventListener('change', carregarHorarios);
-    duracaoSelect.addEventListener('change', carregarHorarios);
 
     async function carregarHorarios() {
       const sala = salaSelect.value;
       const data = dataInput.value;
-      const duracao = duracaoSelect.value;
+      const duracao = 60;
 
       if (!sala || !data) return;
 
       const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
-      const horarios = await response.json();
+      let horarios = await response.json();
+
+      horarios = horarios.filter(h => h.endsWith(':00'));
 
       horarioSelect.innerHTML = '';
       if (horarios.length > 0) {
+        const defaultOption = document.createElement('option');
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        defaultOption.textContent = 'Selecione o horário';
+        horarioSelect.appendChild(defaultOption);
+
         horarios.forEach(h => {
           const option = document.createElement('option');
           option.value = h;

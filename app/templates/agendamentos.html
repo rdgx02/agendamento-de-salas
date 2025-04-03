@@ -17,10 +17,32 @@
       font-family: 'Segoe UI', sans-serif;
     }
 
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+    }
+
     h1 {
       color: #1e293b;
-      margin-bottom: 24px;
-      text-align: center;
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .logout {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .logout:hover {
+      background: #dc2626;
     }
 
     table {
@@ -57,31 +79,6 @@
       box-sizing: border-box;
     }
 
-    .actions {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    a, button {
-      text-decoration: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: 500;
-      margin: 0 10px;
-      display: inline-block;
-      cursor: pointer;
-    }
-
-    .logout {
-      background: #ef4444;
-      color: white;
-      border: none;
-    }
-
-    .logout:hover {
-      background: #dc2626;
-    }
-
     .cancelar-btn {
       background: #f87171;
       color: white;
@@ -95,6 +92,27 @@
       background: #dc2626;
     }
 
+    .filtros-actions {
+      display: flex;
+      justify-content: flex-start;
+      margin: 10px 0;
+      padding: 0 10px;
+    }
+
+    .limpar-filtros {
+      background: #e2e8f0;
+      color: #1e293b;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .limpar-filtros:hover {
+      background: #cbd5e1;
+    }
+
     @media (max-width: 768px) {
       table {
         font-size: 12px;
@@ -103,12 +121,22 @@
       th, td {
         padding: 8px;
       }
+
+      .filtros-actions {
+        justify-content: center;
+      }
     }
   </style>
 </head>
 <body class="oculto">
 
-  <h1>📋 Painel de Agendamentos</h1>
+  <header>
+    <h1>📋 Painel de Agendamentos</h1>
+    <div class="filtros-actions">
+      <button class="limpar-filtros" onclick="limparFiltros()">🧹 Limpar Filtros</button>
+    </div>
+    <a href="{{ url_for('logout') }}" class="logout">⛔ Sair do Admin</a>
+  </header>
 
   <table id="tabela-agendamentos">
     <thead>
@@ -153,10 +181,6 @@
     </tbody>
   </table>
 
-  <div class="actions">
-    <a href="{{ url_for('logout') }}" class="logout">⛔ Sair do Admin</a>
-  </div>
-
   <script>
     function filtrarTabela(coluna) {
       const input = document.querySelectorAll("thead input")[coluna];
@@ -169,6 +193,14 @@
         const texto = celula.textContent.toLowerCase();
         linhas[i].style.display = texto.includes(filtro) ? "" : "none";
       }
+    }
+
+    function limparFiltros() {
+      const inputs = document.querySelectorAll("thead input[type='text']");
+      inputs.forEach(input => input.value = "");
+
+      const linhas = document.querySelectorAll("tbody tr");
+      linhas.forEach(linha => linha.style.display = "");
     }
 
     window.addEventListener("pageshow", function(event) {
@@ -190,3 +222,4 @@
 
 </body>
 </html>
+
