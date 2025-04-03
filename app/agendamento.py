@@ -10,7 +10,6 @@ import csv
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev123")
 
-# Caminho absoluto do banco de dados corrigido
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 db_path = os.path.join(basedir, "data", "agendamentos.db")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
@@ -32,7 +31,7 @@ class Agendamento(db.Model):
 def horarios_disponiveis():
     sala = request.args.get("sala")
     data = request.args.get("data")
-    duracao = int(request.args.get("duracao", 30))
+    duracao = 60
     if not sala or not data:
         return jsonify([])
     return jsonify(gerar_horarios_disponiveis(sala, data, duracao))
@@ -42,7 +41,7 @@ def salas_disponiveis_route():
     data = request.args.get("data")
     if not data:
         return jsonify([])
-    return jsonify(salas_disponiveis_para_data(data, 30))
+    return jsonify(salas_disponiveis_para_data(data, 60))
 
 def verificar_disponibilidade(sala, data, inicio, fim):
     agendamentos = Agendamento.query.filter_by(sala=sala, data=data).all()
@@ -64,19 +63,14 @@ def gerar_horarios_disponiveis(sala, data, duracao):
 
     inicio = datetime.combine(data_dt.date(), datetime.strptime("08:00", "%H:%M").time())
     fim_limite = datetime.combine(data_dt.date(), datetime.strptime("18:00", "%H:%M").time())
-    fim_maximo = fim_limite + timedelta(minutes=120)
-
-    if agora.minute < 30:
-        proximo_slot = agora.replace(minute=30, second=0, microsecond=0)
-    else:
-        proximo_slot = (agora + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
 
     while inicio <= fim_limite:
         fim_agendamento = inicio + timedelta(minutes=duracao)
-        if fim_agendamento <= fim_maximo:
-            if data_dt.date() > agora.date() or (data_dt.date() == agora.date() and inicio >= proximo_slot):
+        if fim_agendamento <= fim_limite:
+            if data_dt.date() > agora.date() or (data_dt.date() == agora.date() and inicio >= agora):
                 if verificar_disponibilidade(sala, data, inicio, fim_agendamento):
-                    horarios.append(inicio.strftime("%H:%M"))
+                    if inicio.minute == 0:
+                        horarios.append(inicio.strftime("%H:%M"))
         inicio += timedelta(minutes=30)
     return horarios
 
@@ -91,7 +85,6 @@ def agendar():
     aviso_sem_salas = False
     salas_para_data = []
     horarios_disponiveis = []
-
     hoje = date.today().strftime("%Y-%m-%d")
 
     if data:
@@ -105,9 +98,9 @@ def agendar():
         if data_dt.weekday() in [5, 6]:
             return render_template("form.html", salas=[], horarios_disponiveis=[], mensagem="Não é possível agendar aos sábados ou domingos.", aviso_sem_salas=True, hoje=hoje)
 
-        salas_para_data = salas_disponiveis_para_data(data, 30)
+        salas_para_data = salas_disponiveis_para_data(data, 60)
         if salas_para_data:
-            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data, 30)
+            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data, 60)
         else:
             aviso_sem_salas = True
 
@@ -115,7 +108,7 @@ def agendar():
         nome = request.form["nome"]
         sala = request.form["sala"]
         horario_inicio = request.form.get("horario_inicio")
-        duracao = int(request.form["duracao"])
+        duracao = 60
 
         if not horario_inicio:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
@@ -190,7 +183,6 @@ def meus_agendamentos():
 @app.route("/cancelar-por-ticket/<int:id>", methods=["POST"])
 def cancelar_por_ticket(id):
     ticket_digitado = request.form.get("ticket", "").strip()
-
     agendamento = Agendamento.query.get_or_404(id)
     ticket_esperado = f"{agendamento.id:06d}"
 
