@@ -257,6 +257,17 @@ def cancelar_agendamento_admin(id):
     db.session.commit()
     return redirect(url_for("listar_agendamentos"))
 
+# ✅ NOVA ROTA: PAINEL PÚBLICO
+@app.route("/painel-publico")
+def painel_publico():
+    agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
+    for a in agendamentos:
+        try:
+            a.data_formatada = datetime.strptime(a.data, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            a.data_formatada = a.data
+    return render_template("painel_publico.html", agendamentos=agendamentos)
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

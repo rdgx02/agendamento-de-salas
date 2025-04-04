@@ -78,13 +78,19 @@
       margin-top: 40px;
     }
 
-    .consulta input {
-      width: 240px;
+    .consulta a button {
+      width: auto;
+      padding: 12px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
     }
 
-    .consulta button {
-      width: auto;
-      padding: 10px 16px;
+    .consulta a button:hover {
+      background-color: #2563eb;
     }
 
     @media (max-width: 500px) {
@@ -92,13 +98,8 @@
         margin: 12px;
       }
 
-      .consulta input {
-        width: 100%;
-      }
-
-      .consulta form {
-        flex-direction: column;
-        gap: 8px;
+      .consulta {
+        padding: 0 16px;
       }
     }
   </style>
@@ -133,12 +134,9 @@
   <div id="alerta" class="mensagem" style="display: none;"></div>
 
   <div class="consulta">
-    <h3>🔍 Consultar meus agendamentos</h3>
-    <form method="GET" action="{{ url_for('meus_agendamentos') }}" style="display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-      <input type="text" name="nome" placeholder="Digite seu nome completo" required
-             style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;">
-      <button type="submit">Ver</button>
-    </form>
+    <a href="{{ url_for('painel_publico') }}">
+      <button type="button">📋 Consultar Agendamentos</button>
+    </a>
   </div>
 
   <script>
