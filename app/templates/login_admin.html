@@ -4,81 +4,76 @@
   <meta charset="UTF-8">
   <title>Acesso Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-store">
   <style>
-    body.oculto {
-      display: none;
-    }
-
-    html, body {
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #f1f5f9;
-      font-family: "Segoe UI", sans-serif;
     }
 
-    .login-container {
-      background: white;
-      padding: 40px 50px;
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    .container {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      width: 90%;
+      max-width: 400px;
       text-align: center;
-      max-width: 360px;
-      margin: auto;
-      margin-top: 15%;
     }
 
-    h2 {
-      font-size: 22px;
+    h1 {
       color: #1e293b;
       margin-bottom: 24px;
+      font-size: 24px;
     }
 
-    input[type="password"], input[type="submit"] {
+    input[type="password"] {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      font-size: 16px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      font-size: 14px;
+      margin-bottom: 16px;
     }
 
-    input[type="submit"] {
-      background: #2563eb;
+    button {
+      background: #0ea5e9;
       color: white;
       border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 8px;
       cursor: pointer;
+      width: 100%;
     }
 
-    input[type="submit"]:hover {
-      background: #1d4ed8;
+    button:hover {
+      background: #0284c7;
     }
   </style>
 </head>
-<body class="oculto">
-  <form class="login-container" method="post">
-    <h2>🔐 Acesso Admin</h2>
-    <input type="password" name="senha" placeholder="Digite a senha" required>
-    <input type="submit" value="Entrar">
-  </form>
+<body>
+
+  <div class="container">
+    <h1>🔒 Acesso do Administrador</h1>
+    <form method="post">
+      <input type="password" name="senha" placeholder="Digite a senha" required>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
 
   <script>
-    window.addEventListener("pageshow", function (event) {
-      try {
-        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
-        if (event.persisted || tipo === "back_forward") {
-          window.location.href = "/logout";
-        } else {
-          document.body.classList.remove("oculto");
-        }
-      } catch (e) {
-        document.body.classList.remove("oculto");
+    window.addEventListener("pageshow", function(event) {
+      const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+      if (event.persisted || tipo === "back_forward") {
+        window.location.href = "{{ url_for('logout') }}";
       }
-      setTimeout(() => document.body.classList.remove("oculto"), 100);
     });
-
-    window.history.replaceState({}, document.title, "/admin");
   </script>
+
 </body>
 </html>

@@ -2,180 +2,118 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Agendamentos Públicos</title>
+  <title>Painel Público de Agendamentos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #f8fafc;
+    body {
       font-family: 'Segoe UI', sans-serif;
-    }
-
-    header {
-      padding: 16px;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 20px;
       text-align: center;
     }
 
     h1 {
       color: #1e293b;
-      font-size: 22px;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
+      font-size: 26px;
     }
 
-    .filtros-actions {
+    .filtros {
       display: flex;
       justify-content: center;
       gap: 12px;
-      margin-bottom: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
     }
 
-    .filtros-actions button, .filtros-actions a button {
-      padding: 10px 16px;
+    .filtros input {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
       font-size: 14px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
+      width: 160px;
     }
 
-    .limpar-filtros {
-      background: #e2e8f0;
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      max-width: 400px;
+      margin: 16px auto;
+      text-align: left;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .card p {
+      font-size: 15px;
+      margin: 8px 0;
       color: #1e293b;
     }
 
-    .limpar-filtros:hover {
-      background: #cbd5e1;
-    }
-
-    .voltar {
-      background-color: #3b82f6;
-      color: white;
-    }
-
-    .voltar:hover {
-      background-color: #2563eb;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 12px 16px;
-      border-bottom: 1px solid #e2e8f0;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f1f5f9;
-      color: #334155;
+    .card p strong {
       font-weight: 600;
     }
 
-    tr:hover {
-      background-color: #f9fafb;
+    .card p i {
+      margin-right: 6px;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 6px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    @media (max-width: 768px) {
-      table {
-        font-size: 12px;
+    @media (max-width: 480px) {
+      .card {
+        margin: 12px;
       }
 
-      th, td {
-        padding: 8px;
-      }
-
-      .filtros-actions {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .filtros-actions button {
-        width: 90%;
+      .filtros input {
+        width: 100%;
       }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>📋 Agendamentos Públicos</h1>
-    <div class="filtros-actions">
-      <button class="limpar-filtros" onclick="limparFiltros()">🧹 Limpar Filtros</button>
-      <a href="{{ url_for('agendar') }}">
-        <button class="voltar">↩️ Voltar para Agendamento de Salas</button>
-      </a>
-    </div>
-  </header>
+  <h1>📌 Agendamentos Públicos</h1>
 
-  <table id="tabela-publica">
-    <thead>
-      <tr>
-        <th><input type="text" placeholder="🔍 ID" onkeyup="filtrarTabela(0)"></th>
-        <th><input type="text" placeholder="🔍 Nome" onkeyup="filtrarTabela(1)"></th>
-        <th><input type="text" placeholder="🔍 Sala" onkeyup="filtrarTabela(2)"></th>
-        <th><input type="text" placeholder="🔍 Data" onkeyup="filtrarTabela(3)"></th>
-        <th><input type="text" placeholder="🔍 Início" onkeyup="filtrarTabela(4)"></th>
-        <th><input type="text" placeholder="🔍 Fim" onkeyup="filtrarTabela(5)"></th>
-      </tr>
-      <tr>
-        <th>ID</th>
-        <th>Nome</th>
-        <th>Sala</th>
-        <th>Data</th>
-        <th>Início</th>
-        <th>Fim</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for a in agendamentos %}
-      <tr>
-        <td>{{ a.id }}</td>
-        <td>{{ a.nome }}</td>
-        <td>{{ a.sala }}</td>
-        <td>{{ a.data_formatada }}</td>
-        <td>{{ a.inicio.strftime('%H:%M') }}</td>
-        <td>{{ a.fim.strftime('%H:%M') }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="filtros">
+    <input type="text" id="filtro-id" placeholder="🔍 ID" onkeyup="filtrar()">
+    <input type="text" id="filtro-nome" placeholder="🔍 Nome" onkeyup="filtrar()">
+    <input type="text" id="filtro-sala" placeholder="🔍 Sala" onkeyup="filtrar()">
+  </div>
+
+  <div id="cards-container">
+    {% for a in agendamentos %}
+      <div class="card" data-id="{{ a.id }}" data-nome="{{ a.nome | lower }}" data-sala="{{ a.sala }}">
+        <p><i>🆔</i><strong>ID:</strong> {{ a.id }}</p>
+        <p><i>👤</i><strong>Nome:</strong> {{ a.nome }}</p>
+        <p><i>🏫</i><strong>Sala:</strong> {{ a.sala }}</p>
+        <p><i>📅</i><strong>Data:</strong> {{ a.data_formatada }}</p>
+        <p><i>🕓</i><strong>Início:</strong> {{ a.inicio.strftime('%H:%M') }}</p>
+        <p><i>⏳</i><strong>Fim:</strong> {{ a.fim.strftime('%H:%M') }}</p>
+      </div>
+    {% endfor %}
+  </div>
 
   <script>
-    function filtrarTabela(coluna) {
-      const input = document.querySelectorAll("thead input")[coluna];
-      const filtro = input.value.toLowerCase();
-      const tabela = document.getElementById("tabela-publica");
-      const linhas = tabela.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+    function filtrar() {
+      const idFiltro = document.getElementById("filtro-id").value.toLowerCase();
+      const nomeFiltro = document.getElementById("filtro-nome").value.toLowerCase();
+      const salaFiltro = document.getElementById("filtro-sala").value.toLowerCase();
+      const cards = document.querySelectorAll(".card");
 
-      for (let i = 0; i < linhas.length; i++) {
-        const celula = linhas[i].getElementsByTagName("td")[coluna];
-        const texto = celula.textContent.toLowerCase();
-        linhas[i].style.display = texto.includes(filtro) ? "" : "none";
-      }
-    }
+      cards.forEach(card => {
+        const id = card.dataset.id.toString();
+        const nome = card.dataset.nome;
+        const sala = card.dataset.sala.toString();
 
-    function limparFiltros() {
-      const inputs = document.querySelectorAll("thead input[type='text']");
-      inputs.forEach(input => input.value = "");
+        const mostrar = (
+          id.includes(idFiltro) &&
+          nome.includes(nomeFiltro) &&
+          sala.includes(salaFiltro)
+        );
 
-      const linhas = document.querySelectorAll("tbody tr");
-      linhas.forEach(linha => linha.style.display = "");
+        card.style.display = mostrar ? "block" : "none";
+      });
     }
   </script>
 

@@ -5,44 +5,34 @@
   <title>Painel de Agendamentos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body.oculto {
-      display: none;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #f8fafc;
+    body {
       font-family: 'Segoe UI', sans-serif;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 20px;
     }
 
     h1 {
       color: #1e293b;
-      margin: 0;
-      font-size: 22px;
+      margin-bottom: 16px;
     }
 
-    .logout {
-      background: #ef4444;
-      color: white;
+    .filtros-actions {
+      margin-bottom: 10px;
+    }
+
+    .limpar-filtros {
+      background: #e2e8f0;
+      color: #1e293b;
       border: none;
-      padding: 10px 16px;
+      padding: 8px 14px;
       border-radius: 8px;
       font-weight: 500;
       cursor: pointer;
-      text-decoration: none;
     }
 
-    .logout:hover {
-      background: #dc2626;
+    .limpar-filtros:hover {
+      background: #cbd5e1;
     }
 
     table {
@@ -93,51 +83,31 @@
       background: #dc2626;
     }
 
-    .filtros-actions {
-      display: flex;
-      justify-content: flex-start;
-      margin: 10px 0;
-      padding: 0 10px;
-    }
-
-    .limpar-filtros {
-      background: #e2e8f0;
-      color: #1e293b;
+    .logout {
+      margin-top: 16px;
+      display: inline-block;
+      background: #ef4444;
+      color: white;
       border: none;
-      padding: 8px 14px;
+      padding: 10px 16px;
       border-radius: 8px;
       font-weight: 500;
       cursor: pointer;
+      text-decoration: none;
     }
 
-    .limpar-filtros:hover {
-      background: #cbd5e1;
-    }
-
-    @media (max-width: 768px) {
-      table {
-        font-size: 12px;
-      }
-
-      th, td {
-        padding: 8px;
-      }
-
-      .filtros-actions {
-        justify-content: center;
-      }
+    .logout:hover {
+      background: #dc2626;
     }
   </style>
 </head>
-<body class="oculto">
+<body>
 
-  <header>
-    <h1>📋 Painel de Agendamentos</h1>
-    <div class="filtros-actions">
-      <button class="limpar-filtros" onclick="limparFiltros()">🧹 Limpar Filtros</button>
-    </div>
-    <a href="{{ url_for('logout') }}" class="logout">⛔ Sair do Admin</a>
-  </header>
+  <h1>📋 Painel de Agendamentos</h1>
+
+  <div class="filtros-actions">
+    <button class="limpar-filtros" onclick="limparFiltros()">🧹 Limpar Filtros</button>
+  </div>
 
   <table id="tabela-agendamentos">
     <thead>
@@ -182,18 +152,19 @@
     </tbody>
   </table>
 
+  <a href="{{ url_for('logout') }}" class="logout">⛔ Sair do Admin</a>
+
   <script>
     function filtrarTabela(coluna) {
       const input = document.querySelectorAll("thead input")[coluna];
       const filtro = input.value.toLowerCase();
-      const tabela = document.getElementById("tabela-agendamentos");
-      const linhas = tabela.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+      const linhas = document.querySelectorAll("tbody tr");
 
-      for (let i = 0; i < linhas.length; i++) {
-        const celula = linhas[i].getElementsByTagName("td")[coluna];
+      linhas.forEach(linha => {
+        const celula = linha.querySelectorAll("td")[coluna];
         const texto = celula.textContent.toLowerCase();
-        linhas[i].style.display = texto.includes(filtro) ? "" : "none";
-      }
+        linha.style.display = texto.includes(filtro) ? "" : "none";
+      });
     }
 
     function limparFiltros() {
@@ -204,18 +175,12 @@
       linhas.forEach(linha => linha.style.display = "");
     }
 
+    // Bloqueio das setas do navegador
     window.addEventListener("pageshow", function(event) {
-      try {
-        const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
-        if (event.persisted || tipo === "back_forward") {
-          window.location.href = "/logout";
-        } else {
-          document.body.classList.remove("oculto");
-        }
-      } catch (e) {
-        document.body.classList.remove("oculto");
+      const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+      if (event.persisted || tipo === "back_forward") {
+        window.location.href = "/logout";
       }
-      setTimeout(() => document.body.classList.remove("oculto"), 100);
     });
 
     window.history.replaceState({}, document.title, "/agendamentos");

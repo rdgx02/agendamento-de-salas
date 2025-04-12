@@ -165,12 +165,13 @@ def confirmado():
 @app.route("/meus-agendamentos")
 def meus_agendamentos():
     nome = request.args.get("nome", "").strip()
-    if not nome:
-        return redirect(url_for("agendar"))
 
-    agendamentos = Agendamento.query.filter(
-        Agendamento.nome.ilike(f"%{nome}%")
-    ).order_by(Agendamento.data, Agendamento.inicio).all()
+    if nome:
+        agendamentos = Agendamento.query.filter(
+            Agendamento.nome.ilike(f"%{nome}%")
+        ).order_by(Agendamento.data, Agendamento.inicio).all()
+    else:
+        agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
 
     for a in agendamentos:
         try:

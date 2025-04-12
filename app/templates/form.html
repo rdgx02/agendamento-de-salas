@@ -9,30 +9,30 @@
       font-family: 'Segoe UI', sans-serif;
       background-color: #f8fafc;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       text-align: center;
     }
 
     h1 {
       color: #1e293b;
-      margin: 30px 0 10px;
+      margin-bottom: 20px;
       font-size: 24px;
     }
 
     form {
-      background: white;
-      padding: 24px;
-      margin: 20px auto;
-      max-width: 400px;
+      background: #ffffff;
+      padding: 20px;
+      max-width: 420px;
+      margin: 0 auto;
       border-radius: 12px;
       box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
+      text-align: left;
     }
 
     label {
       display: block;
-      text-align: left;
       margin: 12px 0 6px;
-      font-weight: 500;
+      font-weight: 600;
       color: #334155;
     }
 
@@ -46,22 +46,12 @@
       box-sizing: border-box;
     }
 
-    input[readonly], input[disabled] {
-      background-color: #e5e7eb;
-      cursor: default;
-    }
-
-    input.noclick {
-      pointer-events: none;
-      background-color: #e5e7eb;
-    }
-
     button {
       background-color: #3b82f6;
       color: white;
-      border: none;
       font-weight: 600;
       cursor: pointer;
+      border: none;
     }
 
     button:hover {
@@ -74,32 +64,33 @@
       margin-top: 10px;
     }
 
-    .consulta {
-      margin-top: 40px;
+    .consultar-btn {
+      margin-top: 20px;
     }
 
-    .consulta a button {
-      width: auto;
-      padding: 12px 20px;
-      font-size: 14px;
-      border: none;
-      border-radius: 8px;
-      background-color: #3b82f6;
+    .consultar-btn a {
+      display: inline-block;
+      background-color: #6366f1;
       color: white;
-      cursor: pointer;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
     }
 
-    .consulta a button:hover {
-      background-color: #2563eb;
+    .consultar-btn a:hover {
+      background-color: #4f46e5;
     }
 
-    @media (max-width: 500px) {
+    @media (max-width: 480px) {
       form {
         margin: 12px;
       }
 
-      .consulta {
-        padding: 0 16px;
+      .consultar-btn a {
+        width: 100%;
+        display: block;
       }
     }
   </style>
@@ -122,7 +113,7 @@
     <select id="horario_inicio" name="horario_inicio" required disabled></select>
 
     <label for="duracao">Duração:</label>
-    <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1" class="noclick">
+    <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1">
 
     <button type="submit">Reservar</button>
 
@@ -131,11 +122,9 @@
     {% endif %}
   </form>
 
-  <div id="alerta" class="mensagem" style="display: none;"></div>
-
-  <div class="consulta">
-    <a href="{{ url_for('painel_publico') }}">
-      <button type="button">📋 Consultar Agendamentos</button>
+  <div class="consultar-btn">
+    <a href="{{ url_for('meus_agendamentos') }}">
+      🔎 Consultar Agendamentos
     </a>
   </div>
 
@@ -143,7 +132,6 @@
     const dataInput = document.getElementById('data');
     const salaSelect = document.getElementById('sala');
     const horarioSelect = document.getElementById('horario_inicio');
-    const alerta = document.getElementById('alerta');
 
     dataInput.addEventListener('change', async () => {
       const data = dataInput.value;
@@ -151,16 +139,11 @@
       const diaSemana = dataSelecionada.getUTCDay();
 
       if (diaSemana === 0 || diaSemana === 6) {
-        alerta.textContent = "⚠️ Não é possível agendar aos sábados ou domingos.";
-        alerta.style.display = "block";
-        salaSelect.innerHTML = '';
-        horarioSelect.innerHTML = '';
+        alert('⚠️ Não é possível agendar aos sábados ou domingos.');
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
         return;
       }
-
-      alerta.style.display = "none";
 
       const salaResponse = await fetch(`/salas-disponiveis?data=${data}`);
       const salas = await salaResponse.json();
@@ -180,30 +163,18 @@
           salaSelect.appendChild(option);
         });
         salaSelect.disabled = false;
-        horarioSelect.disabled = true;
-        horarioSelect.innerHTML = '';
       } else {
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
-        horarioSelect.innerHTML = '';
-        alerta.textContent = "⚠️ Nenhuma sala disponível para a data selecionada.";
-        alerta.style.display = "block";
+        alert('⚠️ Nenhuma sala disponível para a data selecionada.');
       }
     });
 
-    salaSelect.addEventListener('change', carregarHorarios);
-
-    async function carregarHorarios() {
+    salaSelect.addEventListener('change', async () => {
       const sala = salaSelect.value;
       const data = dataInput.value;
-      const duracao = 60;
-
-      if (!sala || !data) return;
-
-      const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
-      let horarios = await response.json();
-
-      horarios = horarios.filter(h => h.endsWith(':00'));
+      const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=60`);
+      const horarios = (await response.json()).filter(h => h.endsWith(':00'));
 
       horarioSelect.innerHTML = '';
       if (horarios.length > 0) {
@@ -220,13 +191,19 @@
           horarioSelect.appendChild(option);
         });
         horarioSelect.disabled = false;
-        alerta.style.display = "none";
       } else {
         horarioSelect.disabled = true;
-        alerta.textContent = "⚠️ Nenhum horário disponível para a sala selecionada.";
-        alerta.style.display = "block";
+        alert('⚠️ Nenhum horário disponível para a sala selecionada.');
       }
-    }
+    });
+
+    // Bloqueio da seta de voltar
+    window.addEventListener("pageshow", function(event) {
+      const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+      if (event.persisted || tipo === "back_forward") {
+        window.location.href = "{{ url_for('agendar') }}";
+      }
+    });
   </script>
 
 </body>

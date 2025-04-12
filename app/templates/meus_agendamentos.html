@@ -9,38 +9,42 @@
       font-family: 'Segoe UI', sans-serif;
       background-color: #f8fafc;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       text-align: center;
     }
 
     h1 {
       color: #1e293b;
-      margin: 30px 0 20px;
+      margin-bottom: 20px;
       font-size: 24px;
     }
 
     .card {
-      background: #f1f5f9;
+      background: #ffffff;
       border-radius: 12px;
-      padding: 16px;
-      margin: 12px auto;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      padding: 20px;
       max-width: 400px;
+      margin: 20px auto;
       text-align: left;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.03);
     }
 
     .card p {
-      margin: 6px 0;
-      color: #334155;
-      font-size: 14px;
+      font-size: 15px;
+      margin: 8px 0;
+      color: #1e293b;
     }
 
-    .card p span {
-      font-weight: bold;
+    .card p strong {
+      font-weight: 600;
     }
 
-    form.cancelar-form {
-      margin-top: 12px;
+    .card p i {
+      margin-right: 6px;
+    }
+
+    form {
+      margin-top: 14px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -59,7 +63,7 @@
       border: none;
       padding: 10px;
       font-size: 14px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
@@ -70,30 +74,54 @@
     .erro-ticket {
       color: #dc2626;
       font-size: 13px;
-      margin-top: 6px;
+      margin-top: 4px;
+    }
+
+    .voltar {
+      margin-top: 30px;
+    }
+
+    .voltar a {
+      text-decoration: none;
+      background: #3b82f6;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      display: inline-block;
+      font-weight: 500;
+    }
+
+    .voltar a:hover {
+      background: #2563eb;
     }
 
     @media (max-width: 480px) {
       .card {
-        margin: 12px 16px;
+        margin: 16px;
+      }
+
+      .voltar a {
+        width: 100%;
+        display: block;
       }
     }
   </style>
 </head>
 <body>
 
-  <h1>🗒️ Meus Agendamentos</h1>
+  <h1>📋 Meus Agendamentos</h1>
 
   {% if agendamentos %}
     {% for a in agendamentos %}
       <div class="card">
-        <p><span>👤 Nome:</span> {{ a.nome }}</p>
-        <p><span>🏫 Sala:</span> {{ a.sala }}</p>
-        <p><span>📅 Data:</span> {{ a.data_formatada }}</p>
-        <p><span>🕓 Início:</span> {{ a.inicio.strftime('%H:%M') }}</p>
-        <p><span>⏳ Fim:</span> {{ a.fim.strftime('%H:%M') }}</p>
+        <p><i>👤</i><strong>Nome:</strong> {{ a.nome }}</p>
+        <p><i>🏫</i><strong>Sala:</strong> {{ a.sala }}</p>
+        <p><i>📅</i><strong>Data:</strong> {{ a.data_formatada }}</p>
+        <p><i>🕓</i><strong>Início:</strong> {{ a.inicio.strftime('%H:%M') }}</p>
+        <p><i>⏳</i><strong>Fim:</strong> {{ a.fim.strftime('%H:%M') }}</p>
+        <p><i>🎫</i><strong>Ticket:</strong> #{{ '%06d' % a.id }}</p>
 
-        <form class="cancelar-form" method="POST" action="{{ url_for('cancelar_por_ticket', id=a.id) }}">
+        <form method="POST" action="{{ url_for('cancelar_por_ticket', id=a.id) }}">
           <input type="text" name="ticket" placeholder="Digite o ticket de confirmação" required>
           <button type="submit">Cancelar</button>
           {% if a.erro_ticket %}
@@ -105,6 +133,10 @@
   {% else %}
     <p style="color: #475569;">Nenhum agendamento encontrado para esse nome.</p>
   {% endif %}
+
+  <div class="voltar">
+    <a href="{{ url_for('agendar') }}">↩️ Voltar para Agendar</a>
+  </div>
 
 </body>
 </html>
