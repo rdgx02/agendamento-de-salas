@@ -99,7 +99,6 @@
     </div>
 
     <div class="botoes">
-      <button onclick="salvarImagem()">Salvar Confirmação</button>
       <a href="{{ url_for('agendar') }}">
         <button class="nova-reserva">Voltar para o Agendamento de Salas</button>
       </a>
@@ -107,19 +106,6 @@
 
     <p class="obs">Guarde este número. Ele será necessário caso queira cancelar sua reserva.</p>
   {% endif %}
-
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script>
-    function salvarImagem() {
-      const card = document.getElementById('confirmacao');
-      html2canvas(card).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'confirmacao.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      });
-    }
-  </script>
 
 </body>
 </html>
