@@ -69,6 +69,11 @@
       box-sizing: border-box;
     }
 
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
     .cancelar-btn {
       background: #f87171;
       color: white;
@@ -81,6 +86,38 @@
 
     .cancelar-btn:hover {
       background: #dc2626;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #fff1f2;
+      min-width: 200px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      z-index: 1;
+      right: 0;
+      padding: 8px 0;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .dropdown-content button {
+      background: none;
+      color: #b91c1c;
+      padding: 10px 16px;
+      text-align: left;
+      border: none;
+      width: 100%;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    .dropdown-content button:hover {
+      background-color: #fee2e2;
+      color: #991b1b;
     }
 
     .logout {
@@ -143,9 +180,14 @@
         <td>{{ a.fim.strftime('%H:%M') }}</td>
         <td>#{{ a.ticket_formatado }}</td>
         <td>
-          <form method="POST" action="{{ url_for('cancelar_agendamento_admin', id=a.id) }}" onsubmit="return confirm('Tem certeza que deseja cancelar este agendamento?');">
-            <button type="submit" class="cancelar-btn">Cancelar</button>
-          </form>
+          <div class="dropdown">
+            <button class="cancelar-btn" onclick="toggleDropdown(this)">Cancelar ▾</button>
+            <div class="dropdown-content">
+              <form method="POST" action="{{ url_for('cancelar_agendamento_admin', id=a.id) }}">
+                <button type="submit" class="confirmar-cancelamento">🗑️ Confirmar Cancelamento</button>
+              </form>
+            </div>
+          </div>
         </td>
       </tr>
       {% endfor %}
@@ -170,9 +212,21 @@
     function limparFiltros() {
       const inputs = document.querySelectorAll("thead input[type='text']");
       inputs.forEach(input => input.value = "");
-
       const linhas = document.querySelectorAll("tbody tr");
       linhas.forEach(linha => linha.style.display = "");
+    }
+
+    function toggleDropdown(botao) {
+      const dropdown = botao.nextElementSibling;
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.cancelar-btn')) {
+        document.querySelectorAll(".dropdown-content").forEach(dc => {
+          dc.style.display = "none";
+        });
+      }
     }
 
     // Bloqueio das setas do navegador

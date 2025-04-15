@@ -95,6 +95,21 @@
       background: #2563eb;
     }
 
+    .pesquisa {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .pesquisa input {
+      padding: 10px;
+      width: 80%;
+      max-width: 400px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+
     @media (max-width: 480px) {
       .card {
         margin: 16px;
@@ -104,6 +119,10 @@
         width: 100%;
         display: block;
       }
+
+      .pesquisa input {
+        width: 90%;
+      }
     }
   </style>
 </head>
@@ -111,16 +130,21 @@
 
   <h1>📋 Meus Agendamentos</h1>
 
+  <!-- Campo de pesquisa -->
+  <div class="pesquisa">
+    <input type="text" id="pesquisa" placeholder="Consultar dados" onkeyup="filtrarAgendamentos()">
+  </div>
+
   {% if agendamentos %}
     {% for a in agendamentos %}
-      <div class="card">
+      <div class="card" data-nome="{{ a.nome|lower }}">
         <p><i>👤</i><strong>Nome:</strong> {{ a.nome }}</p>
         <p><i>🏫</i><strong>Sala:</strong> {{ a.sala }}</p>
         <p><i>📅</i><strong>Data:</strong> {{ a.data_formatada }}</p>
         <p><i>🕓</i><strong>Início:</strong> {{ a.inicio.strftime('%H:%M') }}</p>
         <p><i>⏳</i><strong>Fim:</strong> {{ a.fim.strftime('%H:%M') }}</p>
-        <p><i>🎫</i><strong>Ticket:</strong> #{{ '%06d' % a.id }}</p>
 
+        <!-- Removido o ticket -->
         <form method="POST" action="{{ url_for('cancelar_por_ticket', id=a.id) }}">
           <input type="text" name="ticket" placeholder="Digite o ticket de confirmação" required>
           <button type="submit">Cancelar</button>
@@ -137,6 +161,23 @@
   <div class="voltar">
     <a href="{{ url_for('agendar') }}">↩️ Voltar para Agendar</a>
   </div>
+
+  <script>
+    // Função para filtrar os agendamentos
+    function filtrarAgendamentos() {
+      const filtro = document.getElementById("pesquisa").value.toLowerCase();
+      const agendamentos = document.querySelectorAll(".card");
+
+      agendamentos.forEach(function(agendamento) {
+        const nome = agendamento.getAttribute("data-nome");
+        if (nome.includes(filtro)) {
+          agendamento.style.display = "";
+        } else {
+          agendamento.style.display = "none";
+        }
+      });
+    }
+  </script>
 
 </body>
 </html>

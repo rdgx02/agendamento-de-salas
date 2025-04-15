@@ -108,37 +108,59 @@ def agendar():
         nome = request.form["nome"]
         sala = request.form["sala"]
         horario_inicio = request.form.get("horario_inicio")
-        duracao = 60
+        repeticao = request.form.get("repeticao", "nenhum")
+        duracao_repeticao = int(request.form["duracao_repeticao"])
 
         if not horario_inicio:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         try:
-            inicio_dt = datetime.strptime(f"{data} {horario_inicio}", "%Y-%m-%d %H:%M")
-            fim_dt = inicio_dt + timedelta(minutes=duracao)
+            inicio_base = datetime.strptime(f"{data} {horario_inicio}", "%Y-%m-%d %H:%M")
         except ValueError:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Data ou horário inválido.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
-        if inicio_dt < datetime.now():
+        if inicio_base < datetime.now():
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Horário já passou.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
-        if not verificar_disponibilidade(sala, data, inicio_dt, fim_dt):
-            return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Horário indisponível para essa sala.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+        ocorrencias = []
+        total_repeticoes = duracao_repeticao
 
-        novo_agendamento = Agendamento(nome=nome, sala=sala, data=data, inicio=inicio_dt, fim=fim_dt)
-        db.session.add(novo_agendamento)
+        for i in range(total_repeticoes):
+            if repeticao == "semanal":
+                inicio_dt = inicio_base + timedelta(weeks=i)
+            elif repeticao == "mensal":
+                inicio_dt = inicio_base + timedelta(days=30 * i)
+            else:
+                inicio_dt = inicio_base
+
+            fim_dt = inicio_dt + timedelta(minutes=60)
+            data_str = inicio_dt.strftime("%Y-%m-%d")
+
+            if inicio_dt.weekday() in [5, 6]:
+                continue
+            if not verificar_disponibilidade(sala, data_str, inicio_dt, fim_dt):
+                continue
+
+            ocorrencias.append(Agendamento(nome=nome, sala=sala, data=data_str, inicio=inicio_dt, fim=fim_dt))
+
+        if not ocorrencias:
+            return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Nenhum dos horários está disponível nas datas futuras.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+
+        for ag in ocorrencias:
+            db.session.add(ag)
         db.session.commit()
 
-        data_formatada = datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
-        ticket = f"{novo_agendamento.id:06d}"
+        ultima = ocorrencias[0]
+        ticket = f"{ultima.id:06d}"
+        data_formatada = datetime.strptime(ultima.data, "%Y-%m-%d").strftime("%d/%m/%Y")
 
         session["mensagem_confirmacao"] = f"Sala {sala} agendada com sucesso para {nome}!"
         session["dados_confirmacao"] = {
             "nome": nome,
             "sala": sala,
             "data": data_formatada,
-            "inicio": inicio_dt.strftime("%H:%M"),
-            "fim": fim_dt.strftime("%H:%M"),
+            "inicio": ultima.inicio.strftime("%H:%M"),
+            "fim": ultima.fim.strftime("%H:%M"),
             "ticket": ticket
         }
         return redirect(url_for("confirmado"))
@@ -181,7 +203,7 @@ def meus_agendamentos():
 
     return render_template("meus_agendamentos.html", agendamentos=agendamentos)
 
-@app.route("/cancelar-por-ticket/<int:id>", methods=["POST"])
+@app.route("/cancelar-por-ticket/<int:id>", methods=["POST"], endpoint="cancelar_por_ticket")
 def cancelar_por_ticket(id):
     ticket_digitado = request.form.get("ticket", "").strip()
     agendamento = Agendamento.query.get_or_404(id)
@@ -207,32 +229,6 @@ def cancelar_por_ticket(id):
 
     return render_template("meus_agendamentos.html", agendamentos=agendamentos)
 
-@app.route("/exportar")
-def exportar():
-    agendamentos = Agendamento.query.all()
-    csv_path = os.path.join(basedir, "data", "agendamentos_export.csv")
-    with open(csv_path, mode='w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["ID", "Nome", "Sala", "Data", "Início", "Fim"])
-        for a in agendamentos:
-            writer.writerow([a.id, a.nome, a.sala, a.data, a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")])
-    return send_file(csv_path, as_attachment=True)
-
-@app.route("/agendamentos")
-def listar_agendamentos():
-    if session.get("admin_autorizado") != True:
-        return redirect(url_for("login_admin"))
-
-    agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
-    for a in agendamentos:
-        try:
-            a.data_formatada = datetime.strptime(a.data, "%Y-%m-%d").strftime("%d/%m/%Y")
-        except ValueError:
-            a.data_formatada = a.data
-        a.ticket_formatado = f"{a.id:06d}"
-
-    return render_template("agendamentos.html", agendamentos=agendamentos)
-
 @app.route("/admin", methods=["GET", "POST"])
 def login_admin():
     if request.method == "POST":
@@ -249,6 +245,21 @@ def logout():
     session.clear()
     return redirect(url_for("login_admin"))
 
+@app.route("/agendamentos")
+def listar_agendamentos():
+    if session.get("admin_autorizado") != True:
+        return redirect(url_for("login_admin"))
+
+    agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
+    for a in agendamentos:
+        try:
+            a.data_formatada = datetime.strptime(a.data, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            a.data_formatada = a.data
+        a.ticket_formatado = f"{a.id:06d}"
+
+    return render_template("agendamentos.html", agendamentos=agendamentos)
+
 @app.route("/cancelar/<int:id>", methods=["POST"])
 def cancelar_agendamento_admin(id):
     if session.get("admin_autorizado") != True:
@@ -258,15 +269,16 @@ def cancelar_agendamento_admin(id):
     db.session.commit()
     return redirect(url_for("listar_agendamentos"))
 
-@app.route("/painel-publico")
-def painel_publico():
-    agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
-    for a in agendamentos:
-        try:
-            a.data_formatada = datetime.strptime(a.data, "%Y-%m-%d").strftime("%d/%m/%Y")
-        except ValueError:
-            a.data_formatada = a.data
-    return render_template("painel_publico.html", agendamentos=agendamentos)
+@app.route("/exportar")
+def exportar():
+    agendamentos = Agendamento.query.all()
+    csv_path = os.path.join(basedir, "data", "agendamentos_export.csv")
+    with open(csv_path, mode='w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["ID", "Nome", "Sala", "Data", "Início", "Fim"])
+        for a in agendamentos:
+            writer.writerow([a.id, a.nome, a.sala, a.data, a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")])
+    return send_file(csv_path, as_attachment=True)
 
 if __name__ == "__main__":
     with app.app_context():

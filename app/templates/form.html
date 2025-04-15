@@ -64,8 +64,10 @@
       margin-top: 10px;
     }
 
+    /* Ajustando a exibição e centralização do botão de Consultar Agendamentos */
     .consultar-btn {
       margin-top: 20px;
+      text-align: center;
     }
 
     .consultar-btn a {
@@ -77,20 +79,24 @@
       text-decoration: none;
       font-weight: 600;
       font-size: 14px;
+      width: 100%;
+      max-width: 300px; /* Largura máxima */
+      box-sizing: border-box;
     }
 
     .consultar-btn a:hover {
       background-color: #4f46e5;
     }
 
+    /* Ajustes para mobile */
     @media (max-width: 480px) {
       form {
         margin: 12px;
       }
 
       .consultar-btn a {
-        width: 100%;
-        display: block;
+        font-size: 16px; /* Ajuste para aumentar o tamanho do texto */
+        padding: 15px 20px; /* Ajuste o padding para se adaptar ao tamanho da tela */
       }
     }
   </style>
@@ -115,6 +121,29 @@
     <label for="duracao">Duração:</label>
     <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1">
 
+    <label for="repeticao">Repetir:</label>
+    <select id="repeticao" name="repeticao">
+      <option value="nenhum" selected>Não repetir</option>
+      <option value="semanal">Repetir semanalmente</option>
+      <option value="mensal">Repetir mensalmente</option>
+    </select>
+
+    <label for="duracao_repeticao">Período (meses):</label>
+    <select id="duracao_repeticao" name="duracao_repeticao">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="12">12</option>
+    </select>
+
     <button type="submit">Reservar</button>
 
     {% if mensagem %}
@@ -123,15 +152,15 @@
   </form>
 
   <div class="consultar-btn">
-    <a href="{{ url_for('meus_agendamentos') }}">
-      🔎 Consultar Agendamentos
-    </a>
+    <a href="{{ url_for('meus_agendamentos') }}">🔎 Consultar Agendamentos</a>
   </div>
 
   <script>
     const dataInput = document.getElementById('data');
     const salaSelect = document.getElementById('sala');
     const horarioSelect = document.getElementById('horario_inicio');
+    const repeticaoSelect = document.getElementById('repeticao');
+    const duracaoRepeticaoSelect = document.getElementById('duracao_repeticao');
 
     dataInput.addEventListener('change', async () => {
       const data = dataInput.value;
@@ -194,6 +223,16 @@
       } else {
         horarioSelect.disabled = true;
         alert('⚠️ Nenhum horário disponível para a sala selecionada.');
+      }
+    });
+
+    // Exibir as opções de duração para semanal ou mensal
+    repeticaoSelect.addEventListener('change', () => {
+      if (repeticaoSelect.value === 'semanal' || repeticaoSelect.value === 'mensal') {
+        duracaoRepeticaoSelect.disabled = false;
+      } else {
+        duracaoRepeticaoSelect.disabled = true;
+        duracaoRepeticaoSelect.value = ''; // Limpa o valor caso a repetição seja "não repetir"
       }
     });
 
