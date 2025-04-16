@@ -1,8 +1,14 @@
 @echo off
-title 🧠 Iniciando Agendamento de Salas
+cd /d "%~dp0"
 
-echo 🔄 Ativando ambiente virtual e iniciando sistema...
-start "" cmd /k "cd /d \"%~dp0app\" && call \"..\venv\Scripts\activate.bat\" && python agendamento.py"
+echo Ativando ambiente virtual...
+call venv\Scripts\activate.bat
 
-echo 🔒 Pressione qualquer tecla para sair...
-pause >nul
+echo Atualizando projeto via Git...
+git pull
+
+echo Iniciando sistema de agendamento...
+start "" http://127.0.0.1:5000
+python app/agendamento.py
+
+pause

@@ -5,23 +5,64 @@
   <title>Meus Agendamentos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f8fafc;
+      background-color: #f1f5f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       text-align: center;
+      padding-top: 100px;
+      padding-bottom: 80px;
+    }
+
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #1d4ed8;
+      color: white;
+      padding: 20px 16px 12px;
+      font-size: 18px;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1000;
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .top-bar .titulo {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .top-bar input {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      width: 100%;
+      max-width: 380px;
+      font-size: 14px;
+      background: #e2e8f0;
     }
 
     h1 {
-      color: #1e293b;
-      margin-bottom: 20px;
-      font-size: 24px;
+      display: none;
     }
 
     .card {
       background: #ffffff;
-      border-radius: 12px;
+      border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
       padding: 20px;
       max-width: 400px;
@@ -51,8 +92,8 @@
     }
 
     input[type="text"] {
-      padding: 8px;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 10px;
       border: 1px solid #cbd5e1;
       font-size: 14px;
     }
@@ -61,9 +102,9 @@
       background: #ef4444;
       color: white;
       border: none;
-      padding: 10px;
+      padding: 12px;
       font-size: 14px;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
     }
 
@@ -77,61 +118,54 @@
       margin-top: 4px;
     }
 
-    .voltar {
-      margin-top: 30px;
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #10b981;
+      padding: 14px 0;
+      z-index: 1000;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
     }
 
-    .voltar a {
+    .bottom-bar a {
+      background: white;
+      color: #10b981;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 30px;
       text-decoration: none;
-      background: #3b82f6;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 8px;
+      font-size: 15px;
       display: inline-block;
-      font-weight: 500;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
-    .voltar a:hover {
-      background: #2563eb;
-    }
-
-    .pesquisa {
-      margin: 20px 0;
-      display: flex;
-      justify-content: center;
-    }
-
-    .pesquisa input {
-      padding: 10px;
-      width: 80%;
-      max-width: 400px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
+    .bottom-bar a:hover {
+      background: #f0fdf4;
     }
 
     @media (max-width: 480px) {
+      .top-bar input {
+        width: 90%;
+      }
+
+      .bottom-bar a {
+        width: 90%;
+        border-radius: 14px;
+      }
+
       .card {
         margin: 16px;
-      }
-
-      .voltar a {
-        width: 100%;
-        display: block;
-      }
-
-      .pesquisa input {
-        width: 90%;
       }
     }
   </style>
 </head>
 <body>
 
-  <h1>📋 Meus Agendamentos</h1>
-
-  <!-- Campo de pesquisa -->
-  <div class="pesquisa">
+  <div class="top-bar">
+    <div class="titulo">📅 <strong>Agendamentos</strong></div>
     <input type="text" id="pesquisa" placeholder="Consultar dados" onkeyup="filtrarAgendamentos()">
   </div>
 
@@ -144,7 +178,6 @@
         <p><i>🕓</i><strong>Início:</strong> {{ a.inicio.strftime('%H:%M') }}</p>
         <p><i>⏳</i><strong>Fim:</strong> {{ a.fim.strftime('%H:%M') }}</p>
 
-        <!-- Removido o ticket -->
         <form method="POST" action="{{ url_for('cancelar_por_ticket', id=a.id) }}">
           <input type="text" name="ticket" placeholder="Digite o ticket de confirmação" required>
           <button type="submit">Cancelar</button>
@@ -155,26 +188,21 @@
       </div>
     {% endfor %}
   {% else %}
-    <p style="color: #475569;">Nenhum agendamento encontrado para esse nome.</p>
+    <p style="color: #475569; margin-top: 60px;">Nenhum agendamento encontrado para esse nome.</p>
   {% endif %}
 
-  <div class="voltar">
+  <div class="bottom-bar">
     <a href="{{ url_for('agendar') }}">↩️ Voltar para Agendar</a>
   </div>
 
   <script>
-    // Função para filtrar os agendamentos
     function filtrarAgendamentos() {
       const filtro = document.getElementById("pesquisa").value.toLowerCase();
       const agendamentos = document.querySelectorAll(".card");
 
       agendamentos.forEach(function(agendamento) {
         const nome = agendamento.getAttribute("data-nome");
-        if (nome.includes(filtro)) {
-          agendamento.style.display = "";
-        } else {
-          agendamento.style.display = "none";
-        }
+        agendamento.style.display = nome.includes(filtro) ? "" : "none";
       });
     }
   </script>
