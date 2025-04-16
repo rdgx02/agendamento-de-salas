@@ -27,6 +27,11 @@ class Agendamento(db.Model):
     inicio = db.Column(db.DateTime, nullable=False)
     fim = db.Column(db.DateTime, nullable=False)
 
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
 @app.route("/horarios-disponiveis")
 def horarios_disponiveis():
     sala = request.args.get("sala")
@@ -165,16 +170,7 @@ def agendar():
         }
         return redirect(url_for("confirmado"))
 
-    response = make_response(render_template(
-        "form.html",
-        salas=salas_para_data,
-        horarios_disponiveis=horarios_disponiveis,
-        mensagem=mensagem,
-        aviso_sem_salas=aviso_sem_salas,
-        hoje=hoje
-    ))
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    return response
+    return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
 @app.route("/confirmado")
 def confirmado():
@@ -283,4 +279,4 @@ def exportar():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)

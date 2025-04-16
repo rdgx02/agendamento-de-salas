@@ -44,6 +44,22 @@
       border: 1px solid #cbd5e1;
       font-size: 14px;
       box-sizing: border-box;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    input[type="date"] {
+      appearance: none;
+      background-color: white;
+      color: #334155;
+      font-family: 'Segoe UI', sans-serif;
+      height: 44px;
+    }
+
+    input[type="date"]::-webkit-inner-spin-button,
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.4);
     }
 
     button {
@@ -64,7 +80,6 @@
       margin-top: 10px;
     }
 
-    /* Ajustando a exibição e centralização do botão de Consultar Agendamentos */
     .consultar-btn {
       margin-top: 20px;
       text-align: center;
@@ -80,7 +95,7 @@
       font-weight: 600;
       font-size: 14px;
       width: 100%;
-      max-width: 300px; /* Largura máxima */
+      max-width: 300px;
       box-sizing: border-box;
     }
 
@@ -88,15 +103,23 @@
       background-color: #4f46e5;
     }
 
-    /* Ajustes para mobile */
+    #mensagem-erro {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
     @media (max-width: 480px) {
       form {
         margin: 12px;
       }
 
       .consultar-btn a {
-        font-size: 16px; /* Ajuste para aumentar o tamanho do texto */
-        padding: 15px 20px; /* Ajuste o padding para se adaptar ao tamanho da tela */
+        font-size: 16px;
+        padding: 15px 20px;
       }
     }
   </style>
@@ -128,23 +151,16 @@
       <option value="mensal">Repetir mensalmente</option>
     </select>
 
-    <label for="duracao_repeticao">Período (meses):</label>
+    <label for="duracao_repeticao">Período:</label>
     <select id="duracao_repeticao" name="duracao_repeticao">
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="12">12</option>
+      {% for i in range(1, 13) %}
+      <option value="{{ i }}">{{ i }}</option>
+      {% endfor %}
     </select>
 
     <button type="submit">Reservar</button>
+
+    <div id="mensagem-erro"></div>
 
     {% if mensagem %}
       <div class="mensagem">{{ mensagem }}</div>
@@ -152,7 +168,7 @@
   </form>
 
   <div class="consultar-btn">
-    <a href="{{ url_for('meus_agendamentos') }}">🔎 Consultar Agendamentos</a>
+    <a href="{{ url_for('meus_agendamentos') }}">🔍 Consultar Agendamentos</a>
   </div>
 
   <script>
@@ -161,14 +177,39 @@
     const horarioSelect = document.getElementById('horario_inicio');
     const repeticaoSelect = document.getElementById('repeticao');
     const duracaoRepeticaoSelect = document.getElementById('duracao_repeticao');
+    const erroDiv = document.getElementById('mensagem-erro');
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    function exibirErro(msg) {
+      erroDiv.innerText = msg;
+      erroDiv.style.display = 'block';
+      erroDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function limparErro() {
+      erroDiv.innerText = '';
+      erroDiv.style.display = 'none';
+    }
 
     dataInput.addEventListener('change', async () => {
+      limparErro();
       const data = dataInput.value;
-      const dataSelecionada = new Date(data);
-      const diaSemana = dataSelecionada.getUTCDay();
+      const dataSelecionada = new Date(data + 'T00:00');
+      const diaSemana = dataSelecionada.getDay();
+
+      if (dataSelecionada < hoje) {
+        exibirErro('⚠️ Não é possível agendar datas passadas.');
+        dataInput.value = '';
+        salaSelect.disabled = true;
+        horarioSelect.disabled = true;
+        return;
+      }
 
       if (diaSemana === 0 || diaSemana === 6) {
-        alert('⚠️ Não é possível agendar aos sábados ou domingos.');
+        exibirErro('⚠️ Não é possível agendar aos sábados ou domingos.');
+        dataInput.value = '';
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
         return;
@@ -195,11 +236,12 @@
       } else {
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
-        alert('⚠️ Nenhuma sala disponível para a data selecionada.');
+        exibirErro('⚠️ Nenhuma sala disponível para a data selecionada.');
       }
     });
 
     salaSelect.addEventListener('change', async () => {
+      limparErro();
       const sala = salaSelect.value;
       const data = dataInput.value;
       const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=60`);
@@ -222,21 +264,15 @@
         horarioSelect.disabled = false;
       } else {
         horarioSelect.disabled = true;
-        alert('⚠️ Nenhum horário disponível para a sala selecionada.');
+        exibirErro('⚠️ Nenhum horário disponível para a sala selecionada.');
       }
     });
 
-    // Exibir as opções de duração para semanal ou mensal
     repeticaoSelect.addEventListener('change', () => {
-      if (repeticaoSelect.value === 'semanal' || repeticaoSelect.value === 'mensal') {
-        duracaoRepeticaoSelect.disabled = false;
-      } else {
-        duracaoRepeticaoSelect.disabled = true;
-        duracaoRepeticaoSelect.value = ''; // Limpa o valor caso a repetição seja "não repetir"
-      }
+      duracaoRepeticaoSelect.disabled = (repeticaoSelect.value === 'nenhum');
+      if (duracaoRepeticaoSelect.disabled) duracaoRepeticaoSelect.value = '';
     });
 
-    // Bloqueio da seta de voltar
     window.addEventListener("pageshow", function(event) {
       const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
       if (event.persisted || tipo === "back_forward") {
