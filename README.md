@@ -6,14 +6,17 @@ Este projeto é um sistema simples e funcional para agendamento de salas. Foi de
 
 ## 🚀 Funcionalidades
 
-- 📅 Reservar salas disponíveis por data, horário e duração
-- 🔒 Área administrativa com login protegido por senha
-- 📋 Listagem de todos os agendamentos
-- ❌ Cancelamento por ticket (apenas com código de confirmação)
-- 🔍 Consulta de agendamentos por nome
-- 📥 Exportação de todos os agendamentos para CSV
-- ✅ Proteção contra agendamentos em finais de semana
-- 📱 Interface amigável para celular
+- 📅 Reservar salas disponíveis por data, horário e duração  
+- 🔒 Área administrativa com login protegido por senha  
+- 📋 Listagem completa de todos os agendamentos (admin)  
+- 👀 Painel público para visualização dos agendamentos (sem login)  
+- ❌ Cancelamento de agendamento com verificação por ticket  
+- 🔍 Consulta de agendamentos por nome  
+- 📥 Exportação de agendamentos para CSV  
+- ✅ Bloqueio de agendamentos em finais de semana  
+- 🔐 Proteção contra navegação via setas (voltar/avançar) em telas sensíveis  
+- 💾 Opção de salvar o cartão de confirmação como imagem  
+- 📱 Interface amigável e 100% responsiva para dispositivos móveis  
 
 ---
 
@@ -29,6 +32,7 @@ Este projeto é um sistema simples e funcional para agendamento de salas. Foi de
 ```bash
 git clone https://github.com/rdgx02/agendamento-de-salas.git
 cd agendamento-de-salas
+
 ```
 
 2. Crie o ambiente virtual:
