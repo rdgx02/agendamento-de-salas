@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Agendamento Confirmado</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -57,7 +56,7 @@
       flex-wrap: wrap;
     }
 
-    .botoes button {
+    .botoes button, .botoes a button {
       background-color: #7c3aed;
       color: white;
       border: none;
@@ -66,9 +65,12 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: 600;
+      -webkit-appearance: none;
     }
 
-    .botoes button:hover {
+    .botoes button:hover, .botoes a button:hover {
       background-color: #6d28d9;
     }
 
@@ -96,7 +98,7 @@
         flex-direction: column;
       }
 
-      .botoes button {
+      .botoes button, .botoes a button {
         width: 100%;
       }
     }
@@ -118,7 +120,9 @@
     </div>
 
     <div class="botoes">
-      <button onclick="salvarComprovante()">Salvar Comprovante</button>
+      <a href="/static/qrcodes/{{ dados.ticket }}.png" download="comprovante_{{ dados.ticket }}.png">
+        <button>Salvar Comprovante</button>
+      </a>
       <form method="get" action="{{ url_for('agendar') }}">
         <button type="submit" class="nova-reserva">Novo Agendamento</button>
       </form>
@@ -128,17 +132,6 @@
   {% endif %}
 
   <script>
-    function salvarComprovante() {
-      const element = document.getElementById("confirmacao");
-      html2canvas(element).then(function(canvas) {
-        const link = document.createElement("a");
-        link.download = "comprovante_agendamento.png";
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    }
-
-    // Bloqueio da seta de voltar
     window.addEventListener("pageshow", function(event) {
       const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
       if (event.persisted || tipo === "back_forward") {
