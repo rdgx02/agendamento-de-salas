@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    session, send_file, make_response, jsonify
+    session, send_file, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
@@ -176,9 +176,17 @@ def agendar():
 def confirmado():
     mensagem = session.pop("mensagem_confirmacao", None)
     dados = session.pop("dados_confirmacao", None)
-    if not dados:
+
+    if not dados or "ticket" not in dados:
         return redirect(url_for("agendar"))
-    return render_template("confirmado.html", mensagem=mensagem, dados=dados)
+
+    try:
+        ticket_id = int(dados["ticket"])
+        agendamento = Agendamento.query.get(ticket_id)
+    except (ValueError, TypeError):
+        agendamento = None
+
+    return render_template("confirmado.html", mensagem=mensagem, dados=dados, agendamento=agendamento)
 
 @app.route("/meus-agendamentos")
 def meus_agendamentos():

@@ -7,131 +7,136 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f8fafc;
+      background-color: #f1f5f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
       text-align: center;
     }
 
-    h1 {
-      color: #16a34a;
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-
-    .subtitulo {
-      color: #64748b;
-      font-size: 16px;
-      margin-bottom: 24px;
-    }
-
     .card {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-      padding: 24px;
+      background-color: #ecfdf5;
+      border: 2px solid #10b981;
+      border-radius: 16px;
+      padding: 30px 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
       max-width: 400px;
-      margin: 0 auto 24px;
-      text-align: left;
+      width: 100%;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .card h2 {
+      color: #059669;
+      font-size: 20px;
+      margin-bottom: 12px;
     }
 
     .card p {
+      color: #334155;
       font-size: 15px;
-      margin: 8px 0;
-      color: #1e293b;
+      margin: 6px 0;
     }
 
     .card p strong {
       font-weight: 600;
     }
 
-    .card p i {
-      margin-right: 6px;
-    }
-
     .botoes {
+      margin-top: 20px;
       display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .botoes button, .botoes a button {
-      background-color: #7c3aed;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      font-size: 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-family: 'Segoe UI', sans-serif;
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px 0;
+      font-size: 15px;
       font-weight: 600;
-      -webkit-appearance: none;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease;
     }
 
-    .botoes button:hover, .botoes a button:hover {
-      background-color: #6d28d9;
+    .btn:active {
+      transform: scale(0.98);
     }
 
-    .nova-reserva {
-      background-color: #ede9fe;
-      color: #4c1d95;
+    .btn-azul {
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+      color: white;
     }
 
-    .nova-reserva:hover {
-      background-color: #ddd6fe;
+    .btn-roxo {
+      background: linear-gradient(to right, #8b5cf6, #6366f1);
+      color: white;
     }
 
-    .obs {
-      font-size: 12px;
-      color: #475569;
-      margin-top: 10px;
+    .ticket {
+      background: #f9fafb;
+      border: 1px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      margin: 14px 0;
     }
 
-    @media (max-width: 480px) {
-      .card {
-        margin: 12px;
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
       }
-
-      .botoes {
-        flex-direction: column;
-      }
-
-      .botoes button, .botoes a button {
-        width: 100%;
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
   </style>
 </head>
 <body>
 
-  <h1>✅ Sucesso!</h1>
-  <p class="subtitulo">Reserva realizada com sucesso.</p>
+  <div class="card" id="comprovante">
+    <h2>✅ Agendamento realizado com sucesso!</h2>
 
-  {% if dados %}
-    <div class="card" id="confirmacao">
-      <p><i>👤</i><strong>Nome:</strong> {{ dados.nome }}</p>
-      <p><i>🏫</i><strong>Sala:</strong> {{ dados.sala }}</p>
-      <p><i>📅</i><strong>Data:</strong> {{ dados.data }}</p>
-      <p><i>🕓</i><strong>Início:</strong> {{ dados.inicio }}</p>
-      <p><i>⏳</i><strong>Fim:</strong> {{ dados.fim }}</p>
-      <p><i>🎫</i><strong>Ticket:</strong> #{{ dados.ticket }}</p>
-    </div>
+    {% if agendamento %}
+      <p><strong>Nome:</strong> {{ agendamento.nome }}</p>
+      <p><strong>Sala:</strong> {{ agendamento.sala }}</p>
+      <p><strong>Data:</strong> {{ agendamento.data }}</p>
+      <p><strong>Início:</strong> {{ agendamento.inicio.strftime('%H:%M') }}</p>
+      <p><strong>Fim:</strong> {{ agendamento.fim.strftime('%H:%M') }}</p>
+      <div class="ticket">
+        <strong>🎟️ Ticket:</strong> #{{ agendamento.id }}
+      </div>
+    {% else %}
+      <p>Informações não disponíveis.</p>
+    {% endif %}
 
     <div class="botoes">
-      <a href="/static/qrcodes/{{ dados.ticket }}.png" download="comprovante_{{ dados.ticket }}.png">
-        <button>Salvar Comprovante</button>
-      </a>
-      <form method="get" action="{{ url_for('agendar') }}">
-        <button type="submit" class="nova-reserva">Novo Agendamento</button>
-      </form>
+      <button class="btn btn-azul" onclick="salvarComprovante()">📄 Salvar Comprovante</button>
+      <a href="{{ url_for('agendar') }}" class="btn btn-azul">Nova Reserva</a>
+      <a href="{{ url_for('meus_agendamentos') }}" class="btn btn-roxo">🔍 Consultar Agendamentos</a>
     </div>
+  </div>
 
-    <p class="obs">Guarde este número. Será necessário para cancelamento.</p>
-  {% endif %}
-
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
+    function salvarComprovante() {
+      const elemento = document.getElementById('comprovante');
+      html2canvas(elemento).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'comprovante.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
+    // Bloqueio da seta de voltar
     window.addEventListener("pageshow", function(event) {
       const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
       if (event.persisted || tipo === "back_forward") {

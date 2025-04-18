@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f8fafc;
+      background-color: #f0f9ff;
       margin: 0;
       padding: 20px;
       text-align: center;
@@ -21,86 +21,67 @@
 
     form {
       background: #ffffff;
-      padding: 20px;
+      padding: 24px;
       max-width: 420px;
       margin: 0 auto;
-      border-radius: 12px;
-      box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       text-align: left;
     }
 
     label {
       display: block;
-      margin: 12px 0 6px;
-      font-weight: 600;
-      color: #334155;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #1e293b;
     }
 
     input, select, button {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 8px;
+      padding: 12px;
+      margin-top: 6px;
+      margin-bottom: 16px;
+      border-radius: 10px;
       border: 1px solid #cbd5e1;
-      font-size: 14px;
+      font-size: 16px;
       box-sizing: border-box;
       appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-    }
-
-    input[type="date"] {
-      appearance: none;
-      background-color: white;
-      color: #334155;
+      background-color: #f8fafc;
       font-family: 'Segoe UI', sans-serif;
-      height: 44px;
-    }
-
-    input[type="date"]::-webkit-inner-spin-button,
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(0.4);
     }
 
     button {
-      background-color: #3b82f6;
+      background: linear-gradient(to right, #3b82f6, #2563eb);
       color: white;
-      font-weight: 600;
-      cursor: pointer;
+      font-weight: bold;
       border: none;
+      cursor: pointer;
     }
 
     button:hover {
-      background-color: #2563eb;
-    }
-
-    .mensagem {
-      color: #dc2626;
-      font-weight: bold;
-      margin-top: 10px;
+      background: linear-gradient(to right, #2563eb, #1d4ed8);
     }
 
     .consultar-btn {
-      margin-top: 20px;
+      margin-top: 24px;
       text-align: center;
     }
 
     .consultar-btn a {
       display: inline-block;
-      background-color: #6366f1;
+      background: linear-gradient(to right, #8b5cf6, #6366f1);
       color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
+      padding: 14px 20px;
+      border-radius: 10px;
       text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
+      font-weight: bold;
+      font-size: 16px;
       width: 100%;
-      max-width: 300px;
       box-sizing: border-box;
     }
 
     .consultar-btn a:hover {
-      background-color: #4f46e5;
+      background: linear-gradient(to right, #7c3aed, #4f46e5);
     }
 
     #mensagem-erro {
@@ -110,16 +91,21 @@
       border-radius: 8px;
       margin-top: 10px;
       display: none;
+      font-size: 14px;
     }
 
     @media (max-width: 480px) {
       form {
         margin: 12px;
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 20px;
       }
 
       .consultar-btn a {
-        font-size: 16px;
-        padding: 15px 20px;
+        font-size: 15px;
       }
     }
   </style>
@@ -133,32 +119,52 @@
     <input type="text" id="nome" name="nome" required>
 
     <label for="data">Data:</label>
-    <input type="date" id="data" name="data" min="{{ hoje }}" value="{{ request.form.data or request.args.data }}" required>
+    <input 
+      type="date" 
+      id="data" 
+      name="data" 
+      placeholder="Selecione a data"
+      onfocus="this.showPicker && this.showPicker()" 
+      min="{{ hoje }}" 
+      value="{{ request.form.data or request.args.data }}" 
+      required 
+      style="font-size:16px;height:48px;color:#1e293b;background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:12px;box-sizing:border-box;width:100%;"
+    >
 
-    <label for="sala">Sala:</label>
-    <select id="sala" name="sala" required disabled></select>
-
-    <label for="horario_inicio">Horário de Início:</label>
-    <select id="horario_inicio" name="horario_inicio" required disabled></select>
+    <div style="display: flex; gap: 10px;">
+      <div style="flex: 1;">
+        <label for="sala">Sala:</label>
+        <select id="sala" name="sala" required disabled></select>
+      </div>
+      <div style="flex: 1;">
+        <label for="horario_inicio">Horário de Início:</label>
+        <select id="horario_inicio" name="horario_inicio" required disabled></select>
+      </div>
+    </div>
 
     <label for="duracao">Duração:</label>
     <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1">
 
-    <label for="repeticao">Repetir:</label>
-    <select id="repeticao" name="repeticao">
-      <option value="nenhum" selected>Não repetir</option>
-      <option value="semanal">Repetir semanalmente</option>
-      <option value="mensal">Repetir mensalmente</option>
-    </select>
+    <div style="display: flex; gap: 10px;">
+      <div style="flex: 1;">
+        <label for="repeticao">Repetir:</label>
+        <select id="repeticao" name="repeticao">
+          <option value="nenhum" selected>Não repetir</option>
+          <option value="semanal">Repetir semanalmente</option>
+          <option value="mensal">Repetir mensalmente</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <label for="duracao_repeticao">Período:</label>
+        <select id="duracao_repeticao" name="duracao_repeticao">
+          {% for i in range(1, 13) %}
+          <option value="{{ i }}">{{ i }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
 
-    <label for="duracao_repeticao">Período:</label>
-    <select id="duracao_repeticao" name="duracao_repeticao">
-      {% for i in range(1, 13) %}
-      <option value="{{ i }}">{{ i }}</option>
-      {% endfor %}
-    </select>
-
-    <button type="submit">Reservar</button>
+    <button type="submit">📨 Reservar</button>
 
     <div id="mensagem-erro"></div>
 
@@ -223,7 +229,7 @@
         const defaultOption = document.createElement('option');
         defaultOption.disabled = true;
         defaultOption.selected = true;
-        defaultOption.textContent = 'Selecione uma sala';
+        defaultOption.textContent = 'Selecione';
         salaSelect.appendChild(defaultOption);
 
         salas.forEach(sala => {
@@ -280,6 +286,5 @@
       }
     });
   </script>
-
 </body>
 </html>

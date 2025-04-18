@@ -24,7 +24,7 @@
       top: 0;
       left: 0;
       right: 0;
-      background: #1d4ed8;
+      background: linear-gradient(to right, #3b82f6, #2563eb);
       color: white;
       padding: 20px 16px 12px;
       font-size: 18px;
@@ -35,7 +35,7 @@
       z-index: 1000;
       border-bottom-left-radius: 24px;
       border-bottom-right-radius: 24px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .top-bar .titulo {
@@ -54,6 +54,13 @@
       max-width: 380px;
       font-size: 14px;
       background: #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    .top-bar input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      background: #f1f5f9;
     }
 
     h1 {
@@ -63,11 +70,23 @@
     .card {
       background: #ffffff;
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
       padding: 20px;
       max-width: 400px;
       margin: 20px auto;
       text-align: left;
+      animation: fadeInUp 0.4s ease both;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .card p {
@@ -106,10 +125,13 @@
       font-size: 14px;
       border-radius: 12px;
       cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     button:hover {
       background: #dc2626;
+      transform: scale(1.02);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
     }
 
     .erro-ticket {
@@ -123,8 +145,8 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #10b981;
-      padding: 14px 0;
+      background: linear-gradient(to right, #8b5cf6, #6366f1);
+      padding: 16px;
       z-index: 1000;
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
@@ -132,18 +154,19 @@
 
     .bottom-bar a {
       background: white;
-      color: #10b981;
+      color: #6366f1;
       font-weight: 600;
-      padding: 12px 24px;
+      padding: 14px 28px;
       border-radius: 30px;
       text-decoration: none;
       font-size: 15px;
       display: inline-block;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s ease;
     }
 
     .bottom-bar a:hover {
-      background: #f0fdf4;
+      background: #eef2ff;
+      transform: scale(1.03);
     }
 
     @media (max-width: 480px) {
@@ -153,6 +176,7 @@
 
       .bottom-bar a {
         width: 90%;
+        text-align: center;
         border-radius: 14px;
       }
 
