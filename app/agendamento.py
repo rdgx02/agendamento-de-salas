@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
 import csv
+import requests
+import re
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev123")
@@ -32,56 +34,61 @@ def add_header(response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
-@app.route("/horarios-disponiveis")
-def horarios_disponiveis():
-    sala = request.args.get("sala")
-    data = request.args.get("data")
-    duracao = 60
-    if not sala or not data:
-        return jsonify([])
-    return jsonify(gerar_horarios_disponiveis(sala, data, duracao))
+def enviar_para_n8n(dados):
+    try:
+        print("📤 Enviando os seguintes dados para o n8n:")
+        print(dados)  # Mostra no terminal o que está sendo enviado
 
-@app.route("/salas-disponiveis")
-def salas_disponiveis_route():
-    data = request.args.get("data")
-    if not data:
-        return jsonify([])
-    return jsonify(salas_disponiveis_para_data(data, 60))
+        headers = {
+            "apikey": "9C6B7190E010-442E-BC71-AAADB6CBFCC0"
+        }
+        resposta = requests.post(
+            "https://n8n.ladetec.iq.ufrj.br/webhook/confirmar-agendamento",
+            json=dados,
+            headers=headers
+        )
 
-def verificar_disponibilidade(sala, data, inicio, fim):
-    agendamentos = Agendamento.query.filter_by(sala=sala, data=data).all()
-    for a in agendamentos:
-        if not (fim <= a.inicio or inicio >= a.fim):
-            return False
-    return True
+        print("🔁 Status Code:", resposta.status_code)
+        print("🔁 Resposta:", resposta.text)
+
+        if resposta.status_code != 200:
+            print("❌ Erro ao enviar para o n8n:", resposta.status_code, resposta.text)
+        else:
+            print("✅ Confirmação enviada com sucesso ao n8n.")
+    except Exception as e:
+        print("❌ Erro inesperado ao enviar para n8n:", e)
+
+
+
+
+def verificar_disponibilidade(sala, data_str, inicio_dt, fim_dt):
+    conflitos = Agendamento.query.filter_by(sala=sala, data=data_str).filter(
+        Agendamento.inicio < fim_dt,
+        Agendamento.fim > inicio_dt
+    ).count()
+    return conflitos == 0
 
 def gerar_horarios_disponiveis(sala, data, duracao):
-    horarios = []
+    inicio_dia = datetime.strptime(f"{data} 08:00", "%Y-%m-%d %H:%M")
+    fim_dia = datetime.strptime(f"{data} 18:00", "%Y-%m-%d %H:%M")
     agora = datetime.now()
-    try:
-        data_dt = datetime.strptime(data, "%Y-%m-%d")
-    except ValueError:
-        return []
+    horarios = []
 
-    if data_dt.weekday() in [5, 6]:
-        return []
+    while inicio_dia + timedelta(minutes=duracao) <= fim_dia:
+        fim_horario = inicio_dia + timedelta(minutes=duracao)
+        if inicio_dia >= agora and verificar_disponibilidade(sala, data, inicio_dia, fim_horario):
+            horarios.append(inicio_dia.strftime("%H:%M"))
+        inicio_dia += timedelta(minutes=60)
 
-    inicio = datetime.combine(data_dt.date(), datetime.strptime("08:00", "%H:%M").time())
-    fim_limite = datetime.combine(data_dt.date(), datetime.strptime("18:00", "%H:%M").time())
-
-    while inicio <= fim_limite:
-        fim_agendamento = inicio + timedelta(minutes=duracao)
-        if fim_agendamento <= fim_limite:
-            if data_dt.date() > agora.date() or (data_dt.date() == agora.date() and inicio >= agora):
-                if verificar_disponibilidade(sala, data, inicio, fim_agendamento):
-                    if inicio.minute == 0:
-                        horarios.append(inicio.strftime("%H:%M"))
-        inicio += timedelta(minutes=30)
     return horarios
 
 def salas_disponiveis_para_data(data, duracao):
-    return [sala for sala in salas_disponiveis if gerar_horarios_disponiveis(sala, data, duracao)]
-
+    disponiveis = []
+    for sala in salas_disponiveis:
+        horarios = gerar_horarios_disponiveis(sala, data, duracao)
+        if horarios:
+            disponiveis.append(sala)
+    return disponiveis
 @app.route("/", methods=["GET", "POST"])
 def agendar():
     session.clear()
@@ -111,10 +118,22 @@ def agendar():
 
     if request.method == "POST":
         nome = request.form["nome"]
-        sala = request.form["sala"]
+        telefone = request.form.get("telefone", "").strip()
+
+        regex_telefone = r"^\+55\s\d{2}\s\d{5}-\d{4}$"
+        if not re.match(regex_telefone, telefone):
+            return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Telefone inválido. Use o formato +55 21 91234-5678", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+
+        sala = request.form.get("sala")
+        if not sala:
+            return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar uma sala válida.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+
         horario_inicio = request.form.get("horario_inicio")
         repeticao = request.form.get("repeticao", "nenhum")
-        duracao_repeticao = int(request.form["duracao_repeticao"])
+        if repeticao == "nenhum":
+            duracao_repeticao = 1
+        else:
+            duracao_repeticao = int(request.form.get("duracao_repeticao") or 1)
 
         if not horario_inicio:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
@@ -128,9 +147,7 @@ def agendar():
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Horário já passou.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         ocorrencias = []
-        total_repeticoes = duracao_repeticao
-
-        for i in range(total_repeticoes):
+        for i in range(duracao_repeticao):
             if repeticao == "semanal":
                 inicio_dt = inicio_base + timedelta(weeks=i)
             elif repeticao == "mensal":
@@ -166,11 +183,37 @@ def agendar():
             "data": data_formatada,
             "inicio": ultima.inicio.strftime("%H:%M"),
             "fim": ultima.fim.strftime("%H:%M"),
-            "ticket": ticket
+            "ticket": ticket,
+            "telefone": telefone
         }
+
+        enviar_para_n8n(session["dados_confirmacao"])
         return redirect(url_for("confirmado"))
 
     return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+@app.route("/salas-disponiveis")
+def salas_disponiveis_api():
+    data = request.args.get("data")
+    if not data:
+        return jsonify([])
+
+    try:
+        datetime.strptime(data, "%Y-%m-%d")
+    except ValueError:
+        return jsonify([])
+
+    salas = salas_disponiveis_para_data(data, 60)
+    return jsonify(salas)
+
+@app.route("/horarios-disponiveis")
+def horarios_disponiveis_api():
+    sala = request.args.get("sala")
+    data = request.args.get("data")
+    duracao = int(request.args.get("duracao", 60))
+    if not sala or not data:
+        return jsonify([])
+    horarios = gerar_horarios_disponiveis(sala, data, duracao)
+    return jsonify(horarios)
 
 @app.route("/confirmado")
 def confirmado():
@@ -191,7 +234,6 @@ def confirmado():
 @app.route("/meus-agendamentos")
 def meus_agendamentos():
     nome = request.args.get("nome", "").strip()
-
     if nome:
         agendamentos = Agendamento.query.filter(
             Agendamento.nome.ilike(f"%{nome}%")

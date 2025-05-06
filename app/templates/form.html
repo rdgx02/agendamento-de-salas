@@ -12,13 +12,11 @@
       padding: 20px;
       text-align: center;
     }
-
     h1 {
       color: #1e293b;
       margin-bottom: 20px;
       font-size: 24px;
     }
-
     form {
       background: #ffffff;
       padding: 24px;
@@ -28,14 +26,12 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       text-align: left;
     }
-
     label {
       display: block;
       margin-top: 12px;
       font-weight: bold;
       color: #1e293b;
     }
-
     input, select, button {
       width: 100%;
       padding: 12px;
@@ -49,7 +45,6 @@
       background-color: #f8fafc;
       font-family: 'Segoe UI', sans-serif;
     }
-
     button {
       background: linear-gradient(to right, #3b82f6, #2563eb);
       color: white;
@@ -57,16 +52,13 @@
       border: none;
       cursor: pointer;
     }
-
     button:hover {
       background: linear-gradient(to right, #2563eb, #1d4ed8);
     }
-
     .consultar-btn {
       margin-top: 24px;
       text-align: center;
     }
-
     .consultar-btn a {
       display: inline-block;
       background: linear-gradient(to right, #8b5cf6, #6366f1);
@@ -79,11 +71,9 @@
       width: 100%;
       box-sizing: border-box;
     }
-
     .consultar-btn a:hover {
       background: linear-gradient(to right, #7c3aed, #4f46e5);
     }
-
     #mensagem-erro {
       background: #fee2e2;
       color: #b91c1c;
@@ -93,17 +83,14 @@
       display: none;
       font-size: 14px;
     }
-
     @media (max-width: 480px) {
       form {
         margin: 12px;
         padding: 18px;
       }
-
       h1 {
         font-size: 20px;
       }
-
       .consultar-btn a {
         font-size: 15px;
       }
@@ -111,24 +98,26 @@
   </style>
 </head>
 <body>
-
   <h1>📅 Agendamento de Sala</h1>
 
   <form method="POST">
     <label for="nome">Nome completo:</label>
     <input type="text" id="nome" name="nome" required>
 
+    <label for="telefone">Telefone (com DDD):</label>
+    <input 
+      type="text" id="telefone" name="telefone" placeholder="+55 21 91234-5678" required maxlength="19"
+      pattern="^\+55\s\d{2}\s\d{5}-\d{4}$"
+      title="Formato esperado: +55 21 91234-5678"
+      oninput="mascararTelefone(this)"
+    >
+
     <label for="data">Data:</label>
     <input 
-      type="date" 
-      id="data" 
-      name="data" 
+      type="date" id="data" name="data" min="{{ hoje }}"
       placeholder="Selecione a data"
       onfocus="this.showPicker && this.showPicker()" 
-      min="{{ hoje }}" 
-      value="{{ request.form.data or request.args.data }}" 
-      required 
-      style="font-size:16px;height:48px;color:#1e293b;background-color:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:12px;box-sizing:border-box;width:100%;"
+      required
     >
 
     <div style="display: flex; gap: 10px;">
@@ -148,7 +137,7 @@
     <div style="display: flex; gap: 10px;">
       <div style="flex: 1;">
         <label for="repeticao">Repetir:</label>
-        <select id="repeticao" name="repeticao">
+        <select id="repeticao" name="repeticao" disabled>
           <option value="nenhum" selected>Não repetir</option>
           <option value="semanal">Repetir semanalmente</option>
           <option value="mensal">Repetir mensalmente</option>
@@ -156,15 +145,16 @@
       </div>
       <div style="flex: 1;">
         <label for="duracao_repeticao">Período:</label>
-        <select id="duracao_repeticao" name="duracao_repeticao">
+        <select id="duracao_repeticao" disabled>
           {% for i in range(1, 13) %}
           <option value="{{ i }}">{{ i }}</option>
           {% endfor %}
         </select>
+        <input type="hidden" id="duracao_repeticao_hidden" name="duracao_repeticao">
       </div>
     </div>
 
-    <button type="submit">📨 Reservar</button>
+    <button type="submit" disabled>📨 Reservar</button>
 
     <div id="mensagem-erro"></div>
 
@@ -176,109 +166,187 @@
   <div class="consultar-btn">
     <a href="{{ url_for('meus_agendamentos') }}">🔍 Consultar Agendamentos</a>
   </div>
-
   <script>
+    const nome = document.getElementById('nome');
+    const telefone = document.getElementById('telefone');
     const dataInput = document.getElementById('data');
     const salaSelect = document.getElementById('sala');
     const horarioSelect = document.getElementById('horario_inicio');
-    const repeticaoSelect = document.getElementById('repeticao');
-    const duracaoRepeticaoSelect = document.getElementById('duracao_repeticao');
+    const repetirSelect = document.getElementById('repeticao');
+    const periodoSelect = document.getElementById('duracao_repeticao');
+    const periodoHidden = document.getElementById('duracao_repeticao_hidden');
+    const reservarBtn = document.querySelector('button[type="submit"]');
     const erroDiv = document.getElementById('mensagem-erro');
-
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
+  
+    telefone.disabled = true;
+    dataInput.disabled = true;
+    salaSelect.disabled = true;
+    horarioSelect.disabled = true;
+    repetirSelect.disabled = true;
+    periodoSelect.disabled = true;
+    reservarBtn.disabled = true;
+  
     function exibirErro(msg) {
       erroDiv.innerText = msg;
       erroDiv.style.display = 'block';
       erroDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
+  
     function limparErro() {
       erroDiv.innerText = '';
       erroDiv.style.display = 'none';
     }
-
+  
+    function mascararTelefone(campo) {
+      let valor = campo.value.replace(/\D/g, "");
+      if (valor.startsWith("55")) valor = valor.substring(2);
+      valor = valor.substring(0, 11);
+      let ddd = valor.substring(0, 2);
+      let parte1 = valor.substring(2, 7);
+      let parte2 = valor.substring(7, 11);
+      let resultado = "+55";
+      if (ddd) resultado += ` ${ddd}`;
+      if (parte1) resultado += ` ${parte1}`;
+      if (parte2) resultado += `-${parte2}`;
+      campo.value = resultado.trim();
+    }
+  
+    function validarTodosCampos() {
+      return (
+        nome.value.trim() !== '' &&
+        /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim()) &&
+        dataInput.value !== '' &&
+        salaSelect.value !== '' &&
+        horarioSelect.value !== '' &&
+        (repetirSelect.value === 'nenhum' || periodoHidden.value !== '')
+      );
+    }
+  
+    nome.addEventListener('input', () => {
+      telefone.disabled = nome.value.trim() === '';
+    });
+  
+    telefone.addEventListener('input', () => {
+      const valido = /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim());
+      dataInput.disabled = !valido;
+    });
+  
     dataInput.addEventListener('change', async () => {
       limparErro();
-      const data = dataInput.value;
-      const dataSelecionada = new Date(data + 'T00:00');
-      const diaSemana = dataSelecionada.getDay();
-
-      if (dataSelecionada < hoje) {
-        exibirErro('⚠️ Não é possível agendar datas passadas.');
-        dataInput.value = '';
+      const dataSelecionada = dataInput.value;
+      const agora = new Date();
+      const hojeStr = agora.toISOString().split('T')[0];
+  
+      const dia = new Date(dataSelecionada + "T00:00").getDay();
+      if (dia === 0 || dia === 6) {
+        exibirErro("⚠️ Não é possível agendar aos sábados ou domingos.");
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
         return;
       }
-
-      if (diaSemana === 0 || diaSemana === 6) {
-        exibirErro('⚠️ Não é possível agendar aos sábados ou domingos.');
-        dataInput.value = '';
+  
+      if (dataSelecionada === hojeStr && agora.getHours() >= 18) {
+        exibirErro("⚠️ O horário limite para agendamento hoje já passou.");
         salaSelect.disabled = true;
         horarioSelect.disabled = true;
         return;
       }
-
-      const salaResponse = await fetch(`/salas-disponiveis?data=${data}`);
-      const salas = await salaResponse.json();
-
-      salaSelect.innerHTML = '';
-      if (salas.length > 0) {
-        const defaultOption = document.createElement('option');
-        defaultOption.disabled = true;
-        defaultOption.selected = true;
-        defaultOption.textContent = 'Selecione';
-        salaSelect.appendChild(defaultOption);
-
-        salas.forEach(sala => {
-          const option = document.createElement('option');
-          option.value = sala;
-          option.textContent = sala;
-          salaSelect.appendChild(option);
-        });
-        salaSelect.disabled = false;
-      } else {
-        salaSelect.disabled = true;
-        horarioSelect.disabled = true;
-        exibirErro('⚠️ Nenhuma sala disponível para a data selecionada.');
+  
+      try {
+        const response = await fetch(`/salas-disponiveis?data=${dataSelecionada}`);
+        const salas = await response.json();
+  
+        salaSelect.innerHTML = '';
+  
+        if (salas.length > 0) {
+          const defaultOption = document.createElement('option');
+          defaultOption.disabled = true;
+          defaultOption.selected = true;
+          defaultOption.textContent = 'Selecione';
+          salaSelect.appendChild(defaultOption);
+  
+          salas.forEach(sala => {
+            const option = document.createElement('option');
+            option.value = sala;
+            option.textContent = sala;
+            salaSelect.appendChild(option);
+          });
+  
+          salaSelect.disabled = false;
+        } else {
+          salaSelect.disabled = true;
+          horarioSelect.disabled = true;
+          exibirErro("⚠️ Nenhuma sala disponível para esta data.");
+        }
+      } catch (err) {
+        exibirErro("⚠️ Erro ao buscar salas.");
       }
     });
-
+  
     salaSelect.addEventListener('change', async () => {
       limparErro();
       const sala = salaSelect.value;
       const data = dataInput.value;
-      const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=60`);
-      const horarios = (await response.json()).filter(h => h.endsWith(':00'));
-
-      horarioSelect.innerHTML = '';
-      if (horarios.length > 0) {
-        const defaultOption = document.createElement('option');
-        defaultOption.disabled = true;
-        defaultOption.selected = true;
-        defaultOption.textContent = 'Selecione o horário';
-        horarioSelect.appendChild(defaultOption);
-
-        horarios.forEach(h => {
-          const option = document.createElement('option');
-          option.value = h;
-          option.textContent = h;
-          horarioSelect.appendChild(option);
-        });
-        horarioSelect.disabled = false;
-      } else {
-        horarioSelect.disabled = true;
-        exibirErro('⚠️ Nenhum horário disponível para a sala selecionada.');
+      const duracao = 60;
+  
+      try {
+        const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
+        const horarios = (await response.json()).filter(h => h.endsWith(":00"));
+  
+        horarioSelect.innerHTML = '';
+  
+        if (horarios.length > 0) {
+          const defaultOption = document.createElement('option');
+          defaultOption.disabled = true;
+          defaultOption.selected = true;
+          defaultOption.textContent = 'Selecione o horário';
+          horarioSelect.appendChild(defaultOption);
+  
+          horarios.forEach(horario => {
+            const option = document.createElement('option');
+            option.value = horario;
+            option.textContent = horario;
+            horarioSelect.appendChild(option);
+          });
+  
+          horarioSelect.disabled = false;
+        } else {
+          horarioSelect.disabled = true;
+          exibirErro("⚠️ Nenhum horário disponível para a sala selecionada.");
+        }
+      } catch (err) {
+        exibirErro("⚠️ Erro ao buscar horários disponíveis.");
       }
     });
-
-    repeticaoSelect.addEventListener('change', () => {
-      duracaoRepeticaoSelect.disabled = (repeticaoSelect.value === 'nenhum');
-      if (duracaoRepeticaoSelect.disabled) duracaoRepeticaoSelect.value = '';
+  
+    horarioSelect.addEventListener('change', () => {
+      repetirSelect.disabled = horarioSelect.value === '';
     });
-
+  
+    repetirSelect.addEventListener('change', () => {
+      if (repetirSelect.value === 'nenhum') {
+        periodoSelect.disabled = true;
+        periodoHidden.value = '';
+      } else {
+        periodoSelect.disabled = false;
+        periodoHidden.value = periodoSelect.value;
+      }
+      reservarBtn.disabled = !validarTodosCampos();
+    });
+  
+    periodoSelect.addEventListener('change', () => {
+      periodoHidden.value = periodoSelect.value;
+      reservarBtn.disabled = !validarTodosCampos();
+    });
+  
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => {
+        if (repetirSelect.value === 'nenhum') {
+          reservarBtn.disabled = !validarTodosCampos();
+        }
+      });
+    });
+  
     window.addEventListener("pageshow", function(event) {
       const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
       if (event.persisted || tipo === "back_forward") {
@@ -286,5 +354,6 @@
       }
     });
   </script>
-</body>
-</html>
+  </body>
+  </html>
+  
