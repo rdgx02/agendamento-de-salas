@@ -8,6 +8,7 @@ import os
 import csv
 import requests
 import re
+import uuid
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev123")
@@ -28,6 +29,7 @@ class Agendamento(db.Model):
     data = db.Column(db.String(10), nullable=False)
     inicio = db.Column(db.DateTime, nullable=False)
     fim = db.Column(db.DateTime, nullable=False)
+    ticket = db.Column(db.String(12), unique=True, nullable=False, default=lambda: uuid.uuid4().hex[:8])
 
 @app.after_request
 def add_header(response):
@@ -36,11 +38,11 @@ def add_header(response):
 
 def enviar_para_n8n(dados):
     try:
-        print("📤 Enviando os seguintes dados para o n8n:")
-        print(dados)  # Mostra no terminal o que está sendo enviado
+        print("\U0001F4E4 Enviando os seguintes dados para o n8n:")
+        print(dados)
 
         headers = {
-            "apikey": "9C6B7190E010-442E-BC71-AAADB6CBFCC0"
+            "apikey": "326E97B23199-47C5-9AB4-69B2B9B9C71A"
         }
         resposta = requests.post(
             "https://n8n.ladetec.iq.ufrj.br/webhook/confirmar-agendamento",
@@ -48,8 +50,8 @@ def enviar_para_n8n(dados):
             headers=headers
         )
 
-        print("🔁 Status Code:", resposta.status_code)
-        print("🔁 Resposta:", resposta.text)
+        print("\U0001F501 Status Code:", resposta.status_code)
+        print("\U0001F501 Resposta:", resposta.text)
 
         if resposta.status_code != 200:
             print("❌ Erro ao enviar para o n8n:", resposta.status_code, resposta.text)
@@ -57,9 +59,6 @@ def enviar_para_n8n(dados):
             print("✅ Confirmação enviada com sucesso ao n8n.")
     except Exception as e:
         print("❌ Erro inesperado ao enviar para n8n:", e)
-
-
-
 
 def verificar_disponibilidade(sala, data_str, inicio_dt, fim_dt):
     conflitos = Agendamento.query.filter_by(sala=sala, data=data_str).filter(
@@ -89,6 +88,7 @@ def salas_disponiveis_para_data(data, duracao):
         if horarios:
             disponiveis.append(sala)
     return disponiveis
+
 @app.route("/", methods=["GET", "POST"])
 def agendar():
     session.clear()
@@ -173,7 +173,7 @@ def agendar():
         db.session.commit()
 
         ultima = ocorrencias[0]
-        ticket = f"{ultima.id:06d}"
+        ticket = ultima.ticket
         data_formatada = datetime.strptime(ultima.data, "%Y-%m-%d").strftime("%d/%m/%Y")
 
         session["mensagem_confirmacao"] = f"Sala {sala} agendada com sucesso para {nome}!"
@@ -191,6 +191,7 @@ def agendar():
         return redirect(url_for("confirmado"))
 
     return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
+
 @app.route("/salas-disponiveis")
 def salas_disponiveis_api():
     data = request.args.get("data")
@@ -223,12 +224,7 @@ def confirmado():
     if not dados or "ticket" not in dados:
         return redirect(url_for("agendar"))
 
-    try:
-        ticket_id = int(dados["ticket"])
-        agendamento = Agendamento.query.get(ticket_id)
-    except (ValueError, TypeError):
-        agendamento = None
-
+    agendamento = Agendamento.query.filter_by(ticket=dados["ticket"]).first()
     return render_template("confirmado.html", mensagem=mensagem, dados=dados, agendamento=agendamento)
 
 @app.route("/meus-agendamentos")
@@ -253,7 +249,7 @@ def meus_agendamentos():
 def cancelar_por_ticket(id):
     ticket_digitado = request.form.get("ticket", "").strip()
     agendamento = Agendamento.query.get_or_404(id)
-    ticket_esperado = f"{agendamento.id:06d}"
+    ticket_esperado = agendamento.ticket
 
     if ticket_digitado == ticket_esperado:
         db.session.delete(agendamento)
@@ -302,7 +298,7 @@ def listar_agendamentos():
             a.data_formatada = datetime.strptime(a.data, "%Y-%m-%d").strftime("%d/%m/%Y")
         except ValueError:
             a.data_formatada = a.data
-        a.ticket_formatado = f"{a.id:06d}"
+        a.ticket_formatado = a.ticket
 
     return render_template("agendamentos.html", agendamentos=agendamentos)
 

@@ -111,7 +111,7 @@
       <p><strong>Início:</strong> {{ agendamento.inicio.strftime('%H:%M') }}</p>
       <p><strong>Fim:</strong> {{ agendamento.fim.strftime('%H:%M') }}</p>
       <div class="ticket">
-        <strong>🎟️ Ticket:</strong> #{{ agendamento.id }}
+        <strong>🎟️ Ticket:</strong> {{ dados.ticket }}
       </div>
     {% else %}
       <p>Informações não disponíveis.</p>
