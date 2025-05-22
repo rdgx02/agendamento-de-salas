@@ -151,16 +151,18 @@
       <tr>
         <th><input type="text" placeholder="🔍 ID" onkeyup="filtrarTabela(0)"></th>
         <th><input type="text" placeholder="🔍 Nome" onkeyup="filtrarTabela(1)"></th>
-        <th><input type="text" placeholder="🔍 Sala" onkeyup="filtrarTabela(2)"></th>
-        <th><input type="text" placeholder="🔍 Data" onkeyup="filtrarTabela(3)"></th>
-        <th><input type="text" placeholder="🔍 Início" onkeyup="filtrarTabela(4)"></th>
-        <th><input type="text" placeholder="🔍 Fim" onkeyup="filtrarTabela(5)"></th>
-        <th><input type="text" placeholder="🔍 Ticket" onkeyup="filtrarTabela(6)"></th>
+        <th><input type="text" placeholder="🔍 Setor" onkeyup="filtrarTabela(2)"></th>
+        <th><input type="text" placeholder="🔍 Sala" onkeyup="filtrarTabela(3)"></th>
+        <th><input type="text" placeholder="🔍 Data" onkeyup="filtrarTabela(4)"></th>
+        <th><input type="text" placeholder="🔍 Início" onkeyup="filtrarTabela(5)"></th>
+        <th><input type="text" placeholder="🔍 Fim" onkeyup="filtrarTabela(6)"></th>
+        <th><input type="text" placeholder="🔍 Ticket" onkeyup="filtrarTabela(7)"></th>
         <th>Ações</th>
       </tr>
       <tr>
         <th>ID</th>
         <th>Nome</th>
+        <th>Setor</th>
         <th>Sala</th>
         <th>Data</th>
         <th>Início</th>
@@ -174,6 +176,7 @@
       <tr>
         <td>{{ a.id }}</td>
         <td>{{ a.nome }}</td>
+        <td>{{ a.setor }}</td>
         <td>{{ a.sala }}</td>
         <td>{{ a.data_formatada }}</td>
         <td>{{ a.inicio.strftime('%H:%M') }}</td>

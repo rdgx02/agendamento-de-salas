@@ -106,11 +106,14 @@
 
     <label for="telefone">Telefone (com DDD):</label>
     <input 
-      type="text" id="telefone" name="telefone" placeholder="+55 21 91234-5678" required maxlength="19"
+      type="text" id="telefone" name="telefone" placeholder="+55 21 99999-9999" required maxlength="19"
       pattern="^\+55\s\d{2}\s\d{5}-\d{4}$"
       title="Formato esperado: +55 21 91234-5678"
       oninput="mascararTelefone(this)"
     >
+
+    <label for="setor">Setor:</label>
+    <input type="text" id="setor" name="setor" required>
 
     <label for="data">Data:</label>
     <input 
@@ -132,9 +135,14 @@
     </div>
 
     <label for="duracao">Duração:</label>
-    <input type="text" id="duracao" name="duracao" value="1 hora" readonly tabindex="-1">
+  <select id="duracao" name="duracao_minutos">
+      <option value="30">30 minutos</option>
+      <option value="60" selected>1 hora</option>
+      <option value="90">1:30 hora</option>
+      <option value="120">2 horas</option>
+    </select>
 
-    <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px;">
       <div style="flex: 1;">
         <label for="repeticao">Repetir:</label>
         <select id="repeticao" name="repeticao" disabled>
@@ -166,194 +174,205 @@
   <div class="consultar-btn">
     <a href="{{ url_for('meus_agendamentos') }}">🔍 Consultar Agendamentos</a>
   </div>
-  <script>
-    const nome = document.getElementById('nome');
-    const telefone = document.getElementById('telefone');
-    const dataInput = document.getElementById('data');
-    const salaSelect = document.getElementById('sala');
-    const horarioSelect = document.getElementById('horario_inicio');
-    const repetirSelect = document.getElementById('repeticao');
-    const periodoSelect = document.getElementById('duracao_repeticao');
-    const periodoHidden = document.getElementById('duracao_repeticao_hidden');
-    const reservarBtn = document.querySelector('button[type="submit"]');
-    const erroDiv = document.getElementById('mensagem-erro');
-  
-    telefone.disabled = true;
-    dataInput.disabled = true;
-    salaSelect.disabled = true;
-    horarioSelect.disabled = true;
-    repetirSelect.disabled = true;
-    periodoSelect.disabled = true;
-    reservarBtn.disabled = true;
-  
-    function exibirErro(msg) {
-      erroDiv.innerText = msg;
-      erroDiv.style.display = 'block';
-      erroDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ <script>
+  const nome = document.getElementById('nome');
+  const telefone = document.getElementById('telefone');
+  const setor = document.getElementById('setor');
+  const dataInput = document.getElementById('data');
+  const salaSelect = document.getElementById('sala');
+  const horarioSelect = document.getElementById('horario_inicio');
+  const duracaoSelect = document.getElementById('duracao');
+  const repetirSelect = document.getElementById('repeticao');
+  const periodoSelect = document.getElementById('duracao_repeticao');
+  const periodoHidden = document.getElementById('duracao_repeticao_hidden');
+  const reservarBtn = document.querySelector('button[type="submit"]');
+  const erroDiv = document.getElementById('mensagem-erro');
+
+  telefone.disabled = true;
+  setor.disabled = true;
+  dataInput.disabled = true;
+  salaSelect.disabled = true;
+  horarioSelect.disabled = true;
+  duracaoSelect.disabled = true;
+  repetirSelect.disabled = true;
+  periodoSelect.disabled = true;
+  reservarBtn.disabled = true;
+
+  function exibirErro(msg) {
+    erroDiv.innerText = msg;
+    erroDiv.style.display = 'block';
+    erroDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function limparErro() {
+    erroDiv.innerText = '';
+    erroDiv.style.display = 'none';
+  }
+
+  function mascararTelefone(campo) {
+    let valor = campo.value.replace(/\D/g, "");
+    if (valor.startsWith("55")) valor = valor.substring(2);
+    valor = valor.substring(0, 11);
+    let ddd = valor.substring(0, 2);
+    let parte1 = valor.substring(2, 7);
+    let parte2 = valor.substring(7, 11);
+    let resultado = "+55";
+    if (ddd) resultado += ` ${ddd}`;
+    if (parte1) resultado += ` ${parte1}`;
+    if (parte2) resultado += `-${parte2}`;
+    campo.value = resultado.trim();
+  }
+
+  function validarTodosCampos() {
+    return (
+      nome.value.trim() !== '' &&
+      /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim()) &&
+      setor.value.trim() !== '' &&
+      dataInput.value !== '' &&
+      salaSelect.value !== '' &&
+      horarioSelect.value !== '' &&
+      (repetirSelect.value === 'nenhum' || periodoHidden.value !== '')
+    );
+  }
+
+  nome.addEventListener('input', () => {
+    telefone.disabled = nome.value.trim() === '';
+  });
+
+  telefone.addEventListener('input', () => {
+    const valido = /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim());
+    setor.disabled = !valido;
+  });
+
+  setor.addEventListener('input', () => {
+    dataInput.disabled = setor.value.trim() === '';
+  });
+
+  dataInput.addEventListener('change', async () => {
+    limparErro();
+    const dataSelecionada = dataInput.value;
+    const agora = new Date();
+    const hojeStr = agora.toISOString().split('T')[0];
+    const duracao = parseInt(duracaoSelect.value || "60");
+
+    const dia = new Date(dataSelecionada + "T00:00").getDay();
+    if (dia === 0 || dia === 6) {
+      exibirErro("⚠️ Não é possível agendar aos sábados ou domingos.");
+      salaSelect.disabled = true;
+      horarioSelect.disabled = true;
+      return;
     }
-  
-    function limparErro() {
-      erroDiv.innerText = '';
-      erroDiv.style.display = 'none';
+
+    if (dataSelecionada === hojeStr && agora.getHours() >= 18) {
+      exibirErro("⚠️ O horário limite para agendamento hoje já passou.");
+      salaSelect.disabled = true;
+      horarioSelect.disabled = true;
+      return;
     }
-  
-    function mascararTelefone(campo) {
-      let valor = campo.value.replace(/\D/g, "");
-      if (valor.startsWith("55")) valor = valor.substring(2);
-      valor = valor.substring(0, 11);
-      let ddd = valor.substring(0, 2);
-      let parte1 = valor.substring(2, 7);
-      let parte2 = valor.substring(7, 11);
-      let resultado = "+55";
-      if (ddd) resultado += ` ${ddd}`;
-      if (parte1) resultado += ` ${parte1}`;
-      if (parte2) resultado += `-${parte2}`;
-      campo.value = resultado.trim();
-    }
-  
-    function validarTodosCampos() {
-      return (
-        nome.value.trim() !== '' &&
-        /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim()) &&
-        dataInput.value !== '' &&
-        salaSelect.value !== '' &&
-        horarioSelect.value !== '' &&
-        (repetirSelect.value === 'nenhum' || periodoHidden.value !== '')
-      );
-    }
-  
-    nome.addEventListener('input', () => {
-      telefone.disabled = nome.value.trim() === '';
-    });
-  
-    telefone.addEventListener('input', () => {
-      const valido = /^\+55\s\d{2}\s\d{5}-\d{4}$/.test(telefone.value.trim());
-      dataInput.disabled = !valido;
-    });
-  
-    dataInput.addEventListener('change', async () => {
-      limparErro();
-      const dataSelecionada = dataInput.value;
-      const agora = new Date();
-      const hojeStr = agora.toISOString().split('T')[0];
-  
-      const dia = new Date(dataSelecionada + "T00:00").getDay();
-      if (dia === 0 || dia === 6) {
-        exibirErro("⚠️ Não é possível agendar aos sábados ou domingos.");
-        salaSelect.disabled = true;
-        horarioSelect.disabled = true;
-        return;
-      }
-  
-      if (dataSelecionada === hojeStr && agora.getHours() >= 18) {
-        exibirErro("⚠️ O horário limite para agendamento hoje já passou.");
-        salaSelect.disabled = true;
-        horarioSelect.disabled = true;
-        return;
-      }
-  
-      try {
-        const response = await fetch(`/salas-disponiveis?data=${dataSelecionada}`);
-        const salas = await response.json();
-  
-        salaSelect.innerHTML = '';
-  
-        if (salas.length > 0) {
-          const defaultOption = document.createElement('option');
-          defaultOption.disabled = true;
-          defaultOption.selected = true;
-          defaultOption.textContent = 'Selecione';
-          salaSelect.appendChild(defaultOption);
-  
-          salas.forEach(sala => {
-            const option = document.createElement('option');
-            option.value = sala;
-            option.textContent = sala;
-            salaSelect.appendChild(option);
-          });
-  
-          salaSelect.disabled = false;
-        } else {
-          salaSelect.disabled = true;
-          horarioSelect.disabled = true;
-          exibirErro("⚠️ Nenhuma sala disponível para esta data.");
-        }
-      } catch (err) {
-        exibirErro("⚠️ Erro ao buscar salas.");
-      }
-    });
-  
-    salaSelect.addEventListener('change', async () => {
-      limparErro();
-      const sala = salaSelect.value;
-      const data = dataInput.value;
-      const duracao = 60;
-  
-      try {
-        const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
-        const horarios = (await response.json()).filter(h => h.endsWith(":00"));
-  
-        horarioSelect.innerHTML = '';
-  
-        if (horarios.length > 0) {
-          const defaultOption = document.createElement('option');
-          defaultOption.disabled = true;
-          defaultOption.selected = true;
-          defaultOption.textContent = 'Selecione o horário';
-          horarioSelect.appendChild(defaultOption);
-  
-          horarios.forEach(horario => {
-            const option = document.createElement('option');
-            option.value = horario;
-            option.textContent = horario;
-            horarioSelect.appendChild(option);
-          });
-  
-          horarioSelect.disabled = false;
-        } else {
-          horarioSelect.disabled = true;
-          exibirErro("⚠️ Nenhum horário disponível para a sala selecionada.");
-        }
-      } catch (err) {
-        exibirErro("⚠️ Erro ao buscar horários disponíveis.");
-      }
-    });
-  
-    horarioSelect.addEventListener('change', () => {
-      repetirSelect.disabled = horarioSelect.value === '';
-    });
-  
-    repetirSelect.addEventListener('change', () => {
-      if (repetirSelect.value === 'nenhum') {
-        periodoSelect.disabled = true;
-        periodoHidden.value = '';
+
+    try {
+      const response = await fetch(`/salas-disponiveis?data=${dataSelecionada}&duracao=${duracao}`);
+      const salas = await response.json();
+
+      salaSelect.innerHTML = '';
+
+      if (salas.length > 0) {
+        const defaultOption = document.createElement('option');
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        defaultOption.textContent = 'Selecione';
+        salaSelect.appendChild(defaultOption);
+
+        salas.forEach(sala => {
+          const option = document.createElement('option');
+          option.value = sala;
+          option.textContent = sala;
+          salaSelect.appendChild(option);
+        });
+
+        salaSelect.disabled = false;
       } else {
-        periodoSelect.disabled = false;
-        periodoHidden.value = periodoSelect.value;
+        salaSelect.disabled = true;
+        horarioSelect.disabled = true;
+        exibirErro("⚠️ Nenhuma sala disponível para esta data.");
       }
-      reservarBtn.disabled = !validarTodosCampos();
-    });
-  
-    periodoSelect.addEventListener('change', () => {
+    } catch (err) {
+      exibirErro("⚠️ Erro ao buscar salas.");
+    }
+  });
+
+  salaSelect.addEventListener('change', async () => {
+    limparErro();
+    const sala = salaSelect.value;
+    const data = dataInput.value;
+    const duracao = parseInt(duracaoSelect.value || "60");
+
+    try {
+      const response = await fetch(`/horarios-disponiveis?sala=${sala}&data=${data}&duracao=${duracao}`);
+      const horarios = await response.json();
+
+      horarioSelect.innerHTML = '';
+
+      if (horarios.length > 0) {
+        const defaultOption = document.createElement('option');
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        defaultOption.textContent = 'Selecione o horário';
+        horarioSelect.appendChild(defaultOption);
+
+        horarios.forEach(horario => {
+          const option = document.createElement('option');
+          option.value = horario;
+          option.textContent = horario;
+          horarioSelect.appendChild(option);
+        });
+
+        horarioSelect.disabled = false;
+      } else {
+        horarioSelect.disabled = true;
+        exibirErro("⚠️ Nenhum horário disponível para a sala selecionada.");
+      }
+    } catch (err) {
+      exibirErro("⚠️ Erro ao buscar horários disponíveis.");
+    }
+  });
+
+  horarioSelect.addEventListener('change', () => {
+    duracaoSelect.disabled = horarioSelect.value === '';
+    repetirSelect.disabled = horarioSelect.value === '';
+  });
+
+  repetirSelect.addEventListener('change', () => {
+    if (repetirSelect.value === 'nenhum') {
+      periodoSelect.disabled = true;
+      periodoHidden.value = '';
+    } else {
+      periodoSelect.disabled = false;
       periodoHidden.value = periodoSelect.value;
-      reservarBtn.disabled = !validarTodosCampos();
-    });
-  
-    document.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('input', () => {
-        if (repetirSelect.value === 'nenhum') {
-          reservarBtn.disabled = !validarTodosCampos();
-        }
-      });
-    });
-  
-    window.addEventListener("pageshow", function(event) {
-      const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
-      if (event.persisted || tipo === "back_forward") {
-        window.location.href = "{{ url_for('agendar') }}";
+    }
+    reservarBtn.disabled = !validarTodosCampos();
+  });
+
+  periodoSelect.addEventListener('change', () => {
+    periodoHidden.value = periodoSelect.value;
+    reservarBtn.disabled = !validarTodosCampos();
+  });
+
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', () => {
+      if (repetirSelect.value === 'nenhum') {
+        reservarBtn.disabled = !validarTodosCampos();
       }
     });
-  </script>
-  </body>
-  </html>
-  
+  });
+
+  window.addEventListener("pageshow", function(event) {
+    const tipo = performance.getEntriesByType("navigation")[0]?.type || "navigate";
+    if (event.persisted || tipo === "back_forward") {
+      window.location.href = "{{ url_for('agendar') }}";
+    }
+  });
+</script>
+
+</body>
+</html>

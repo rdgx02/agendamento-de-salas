@@ -25,6 +25,8 @@ salas_disponiveis = ["205", "214", "305"]
 class Agendamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
+    telefone = db.Column(db.String(20), nullable=False)
+    setor = db.Column(db.String(100), nullable=False)
     sala = db.Column(db.String(10), nullable=False)
     data = db.Column(db.String(10), nullable=False)
     inicio = db.Column(db.DateTime, nullable=False)
@@ -69,17 +71,23 @@ def verificar_disponibilidade(sala, data_str, inicio_dt, fim_dt):
 
 def gerar_horarios_disponiveis(sala, data, duracao):
     inicio_dia = datetime.strptime(f"{data} 08:00", "%Y-%m-%d %H:%M")
-    fim_dia = datetime.strptime(f"{data} 18:00", "%Y-%m-%d %H:%M")
+    limite_fim = datetime.strptime(f"{data} 18:00", "%Y-%m-%d %H:%M")
     agora = datetime.now()
     horarios = []
 
-    while inicio_dia + timedelta(minutes=duracao) <= fim_dia:
-        fim_horario = inicio_dia + timedelta(minutes=duracao)
-        if inicio_dia >= agora and verificar_disponibilidade(sala, data, inicio_dia, fim_horario):
-            horarios.append(inicio_dia.strftime("%H:%M"))
-        inicio_dia += timedelta(minutes=60)
+    atual = inicio_dia
+    while atual < limite_fim:
+        fim = atual + timedelta(minutes=duracao)
+
+        if fim <= limite_fim and atual >= agora:
+            if verificar_disponibilidade(sala, data, atual, fim):
+                horarios.append(atual.strftime("%H:%M"))
+
+        atual += timedelta(minutes=30)
 
     return horarios
+
+
 
 def salas_disponiveis_para_data(data, duracao):
     disponiveis = []
@@ -98,6 +106,7 @@ def agendar():
     salas_para_data = []
     horarios_disponiveis = []
     hoje = date.today().strftime("%Y-%m-%d")
+    duracao_minutos = int(request.form.get("duracao_minutos") or 60)
 
     if data:
         try:
@@ -110,31 +119,26 @@ def agendar():
         if data_dt.weekday() in [5, 6]:
             return render_template("form.html", salas=[], horarios_disponiveis=[], mensagem="Não é possível agendar aos sábados ou domingos.", aviso_sem_salas=True, hoje=hoje)
 
-        salas_para_data = salas_disponiveis_para_data(data, 60)
+        salas_para_data = salas_disponiveis_para_data(data, duracao_minutos)
         if salas_para_data:
-            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data, 60)
+            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data, duracao_minutos)
         else:
             aviso_sem_salas = True
 
     if request.method == "POST":
         nome = request.form["nome"]
         telefone = request.form.get("telefone", "").strip()
+        setor = request.form.get("setor", "").strip()
+        sala = request.form.get("sala")
+        horario_inicio = request.form.get("horario_inicio")
+        repeticao = request.form.get("repeticao", "nenhum")
+        duracao_repeticao = int(request.form.get("duracao_repeticao") or 1)
 
         regex_telefone = r"^\+55\s\d{2}\s\d{5}-\d{4}$"
         if not re.match(regex_telefone, telefone):
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Telefone inválido. Use o formato +55 21 91234-5678", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
-
-        sala = request.form.get("sala")
         if not sala:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar uma sala válida.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
-
-        horario_inicio = request.form.get("horario_inicio")
-        repeticao = request.form.get("repeticao", "nenhum")
-        if repeticao == "nenhum":
-            duracao_repeticao = 1
-        else:
-            duracao_repeticao = int(request.form.get("duracao_repeticao") or 1)
-
         if not horario_inicio:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
@@ -155,7 +159,7 @@ def agendar():
             else:
                 inicio_dt = inicio_base
 
-            fim_dt = inicio_dt + timedelta(minutes=60)
+            fim_dt = inicio_dt + timedelta(minutes=duracao_minutos)
             data_str = inicio_dt.strftime("%Y-%m-%d")
 
             if inicio_dt.weekday() in [5, 6]:
@@ -163,7 +167,10 @@ def agendar():
             if not verificar_disponibilidade(sala, data_str, inicio_dt, fim_dt):
                 continue
 
-            ocorrencias.append(Agendamento(nome=nome, sala=sala, data=data_str, inicio=inicio_dt, fim=fim_dt))
+            ocorrencias.append(Agendamento(
+                nome=nome, telefone=telefone, setor=setor,
+                sala=sala, data=data_str, inicio=inicio_dt, fim=fim_dt
+            ))
 
         if not ocorrencias:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Nenhum dos horários está disponível nas datas futuras.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
@@ -179,12 +186,13 @@ def agendar():
         session["mensagem_confirmacao"] = f"Sala {sala} agendada com sucesso para {nome}!"
         session["dados_confirmacao"] = {
             "nome": nome,
+            "telefone": telefone,
+            "setor": setor,
             "sala": sala,
             "data": data_formatada,
             "inicio": ultima.inicio.strftime("%H:%M"),
             "fim": ultima.fim.strftime("%H:%M"),
-            "ticket": ticket,
-            "telefone": telefone
+            "ticket": ticket
         }
 
         enviar_para_n8n(session["dados_confirmacao"])
@@ -203,7 +211,8 @@ def salas_disponiveis_api():
     except ValueError:
         return jsonify([])
 
-    salas = salas_disponiveis_para_data(data, 60)
+    duracao = int(request.args.get("duracao", 60))
+    salas = salas_disponiveis_para_data(data, duracao)
     return jsonify(salas)
 
 @app.route("/horarios-disponiveis")
@@ -317,12 +326,17 @@ def exportar():
     csv_path = os.path.join(basedir, "data", "agendamentos_export.csv")
     with open(csv_path, mode='w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["ID", "Nome", "Sala", "Data", "Início", "Fim"])
+        writer.writerow(["ID", "Nome", "Setor", "Telefone", "Sala", "Data", "Início", "Fim"])
         for a in agendamentos:
-            writer.writerow([a.id, a.nome, a.sala, a.data, a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")])
+            writer.writerow([
+                a.id, a.nome, a.setor, a.telefone,
+                a.sala, a.data,
+                a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")
+            ])
     return send_file(csv_path, as_attachment=True)
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=True, host="0.0.0.0", port=5050)
+

@@ -197,6 +197,7 @@
     {% for a in agendamentos %}
       <div class="card" data-nome="{{ a.nome|lower }}">
         <p><i>👤</i><strong>Nome:</strong> {{ a.nome }}</p>
+        <p><i>🏢</i><strong>Setor:</strong> {{ a.setor }}</p>
         <p><i>🏫</i><strong>Sala:</strong> {{ a.sala }}</p>
         <p><i>📅</i><strong>Data:</strong> {{ a.data_formatada }}</p>
         <p><i>🕓</i><strong>Início:</strong> {{ a.inicio.strftime('%H:%M') }}</p>
