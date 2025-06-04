@@ -2,6 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
   <title>Agendamento de Sala</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -117,11 +121,8 @@
 
     <label for="data">Data:</label>
     <input 
-      type="date" id="data" name="data" min="{{ hoje }}"
-      placeholder="Selecione a data"
-      onfocus="this.showPicker && this.showPicker()" 
-      required
-    >
+  type="text" id="data" name="data" placeholder="dd/mm/aaaa" required>
+
 
     <div style="display: flex; gap: 10px;">
       <div style="flex: 1;">
@@ -248,58 +249,60 @@
     dataInput.disabled = setor.value.trim() === '';
   });
 
-  dataInput.addEventListener('change', async () => {
-    limparErro();
-    const dataSelecionada = dataInput.value;
-    const agora = new Date();
-    const hojeStr = agora.toISOString().split('T')[0];
-    const duracao = parseInt(duracaoSelect.value || "60");
+ dataInput.addEventListener('change', async () => {
+  limparErro(); // limpa a mensagem
 
-    const dia = new Date(dataSelecionada + "T00:00").getDay();
-    if (dia === 0 || dia === 6) {
-      exibirErro("⚠️ Não é possível agendar aos sábados ou domingos.");
+  salaSelect.disabled = true;
+  horarioSelect.disabled = true;
+  salaSelect.innerHTML = ''; // limpa salas antigas
+  horarioSelect.innerHTML = ''; // limpa horários antigos
+
+  const dataSelecionada = dataInput.value;
+  const agora = new Date();
+  const hojeStr = agora.toISOString().split('T')[0];
+  const duracao = parseInt(duracaoSelect.value || "60");
+
+  const dia = new Date(dataSelecionada + "T00:00").getDay();
+  if (dia === 0 || dia === 6) {
+    exibirErro("⚠️ Não é possível agendar aos sábados ou domingos.");
+    return;
+  }
+
+  if (dataSelecionada === hojeStr && agora.getHours() >= 18) {
+    exibirErro("⚠️ O horário limite para agendamento hoje já passou.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/salas-disponiveis?data=${dataSelecionada}&duracao=${duracao}`);
+    const salas = await response.json();
+
+    salaSelect.innerHTML = ''; // limpa antes de preencher
+
+    if (salas.length > 0) {
+      const defaultOption = document.createElement('option');
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      defaultOption.textContent = 'Selecione';
+      salaSelect.appendChild(defaultOption);
+
+      salas.forEach(sala => {
+        const option = document.createElement('option');
+        option.value = sala;
+        option.textContent = sala;
+        salaSelect.appendChild(option);
+      });
+
+      salaSelect.disabled = false;
+    } else {
+      exibirErro("⚠️ Nenhuma sala disponível para esta data.");
       salaSelect.disabled = true;
-      horarioSelect.disabled = true;
-      return;
     }
-
-    if (dataSelecionada === hojeStr && agora.getHours() >= 18) {
-      exibirErro("⚠️ O horário limite para agendamento hoje já passou.");
-      salaSelect.disabled = true;
-      horarioSelect.disabled = true;
-      return;
-    }
-
-    try {
-      const response = await fetch(`/salas-disponiveis?data=${dataSelecionada}&duracao=${duracao}`);
-      const salas = await response.json();
-
-      salaSelect.innerHTML = '';
-
-      if (salas.length > 0) {
-        const defaultOption = document.createElement('option');
-        defaultOption.disabled = true;
-        defaultOption.selected = true;
-        defaultOption.textContent = 'Selecione';
-        salaSelect.appendChild(defaultOption);
-
-        salas.forEach(sala => {
-          const option = document.createElement('option');
-          option.value = sala;
-          option.textContent = sala;
-          salaSelect.appendChild(option);
-        });
-
-        salaSelect.disabled = false;
-      } else {
-        salaSelect.disabled = true;
-        horarioSelect.disabled = true;
-        exibirErro("⚠️ Nenhuma sala disponível para esta data.");
-      }
-    } catch (err) {
-      exibirErro("⚠️ Erro ao buscar salas.");
-    }
-  });
+  } catch (err) {
+    exibirErro("⚠️ Erro ao buscar salas.");
+    salaSelect.disabled = true;
+  }
+});
 
   salaSelect.addEventListener('change', async () => {
     limparErro();
@@ -372,6 +375,13 @@
       window.location.href = "{{ url_for('agendar') }}";
     }
   });
+</script>
+<script>
+  flatpickr("#data", {
+  dateFormat: "d/m/Y",
+  locale: "pt"
+});
+
 </script>
 
 </body>

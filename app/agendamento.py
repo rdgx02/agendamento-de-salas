@@ -20,7 +20,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-salas_disponiveis = ["205", "214", "305"]
+salas_disponiveis = ["203", "219", "305"]
 
 class Agendamento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -110,7 +110,8 @@ def agendar():
 
     if data:
         try:
-            data_dt = datetime.strptime(data, "%Y-%m-%d").date()
+            data_dt = datetime.strptime(data, "%d/%m/%Y").date()
+            data_str = data_dt.strftime("%Y-%m-%d")
         except ValueError:
             return render_template("form.html", salas=[], horarios_disponiveis=[], mensagem="Data inválida.", aviso_sem_salas=True, hoje=hoje)
 
@@ -119,9 +120,9 @@ def agendar():
         if data_dt.weekday() in [5, 6]:
             return render_template("form.html", salas=[], horarios_disponiveis=[], mensagem="Não é possível agendar aos sábados ou domingos.", aviso_sem_salas=True, hoje=hoje)
 
-        salas_para_data = salas_disponiveis_para_data(data, duracao_minutos)
+        salas_para_data = salas_disponiveis_para_data(data_str, duracao_minutos)
         if salas_para_data:
-            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data, duracao_minutos)
+            horarios_disponiveis = gerar_horarios_disponiveis(salas_para_data[0], data_str, duracao_minutos)
         else:
             aviso_sem_salas = True
 
@@ -143,7 +144,7 @@ def agendar():
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Você precisa selecionar um horário.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
         try:
-            inicio_base = datetime.strptime(f"{data} {horario_inicio}", "%Y-%m-%d %H:%M")
+            inicio_base = datetime.strptime(f"{data} {horario_inicio}", "%d/%m/%Y %H:%M")
         except ValueError:
             return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem="Data ou horário inválido.", aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
@@ -200,6 +201,7 @@ def agendar():
 
     return render_template("form.html", salas=salas_para_data, horarios_disponiveis=horarios_disponiveis, mensagem=mensagem, aviso_sem_salas=aviso_sem_salas, hoje=hoje)
 
+
 @app.route("/salas-disponiveis")
 def salas_disponiveis_api():
     data = request.args.get("data")
@@ -207,12 +209,13 @@ def salas_disponiveis_api():
         return jsonify([])
 
     try:
-        datetime.strptime(data, "%Y-%m-%d")
+        data_dt = datetime.strptime(data, "%d/%m/%Y").date()
+        data_str = data_dt.strftime("%Y-%m-%d")
     except ValueError:
         return jsonify([])
 
     duracao = int(request.args.get("duracao", 60))
-    salas = salas_disponiveis_para_data(data, duracao)
+    salas = salas_disponiveis_para_data(data_str, duracao)
     return jsonify(salas)
 
 @app.route("/horarios-disponiveis")
@@ -222,8 +225,16 @@ def horarios_disponiveis_api():
     duracao = int(request.args.get("duracao", 60))
     if not sala or not data:
         return jsonify([])
-    horarios = gerar_horarios_disponiveis(sala, data, duracao)
+
+    try:
+        data_dt = datetime.strptime(data, "%d/%m/%Y").date()
+        data_str = data_dt.strftime("%Y-%m-%d")
+    except ValueError:
+        return jsonify([])
+
+    horarios = gerar_horarios_disponiveis(sala, data_str, duracao)
     return jsonify(horarios)
+
 
 @app.route("/confirmado")
 def confirmado():
@@ -239,12 +250,34 @@ def confirmado():
 @app.route("/meus-agendamentos")
 def meus_agendamentos():
     nome = request.args.get("nome", "").strip()
-    if nome:
+    data = request.args.get("data", "").strip()
+    agendamentos = []
+
+    if nome and data:
+        try:
+            data_dt = datetime.strptime(data, "%Y-%m-%d")
+            agendamentos = Agendamento.query.filter(
+                Agendamento.nome.ilike(f"%{nome}%"),
+                Agendamento.data == data
+            ).order_by(Agendamento.data, Agendamento.inicio).all()
+            data_formatada = data_dt.strftime("%d/%m/%Y")
+        except ValueError:
+            data_formatada = ""
+    elif data:
+        try:
+            data_dt = datetime.strptime(data, "%Y-%m-%d")
+            agendamentos = Agendamento.query.filter_by(data=data).order_by(Agendamento.inicio).all()
+            data_formatada = data_dt.strftime("%d/%m/%Y")
+        except ValueError:
+            data_formatada = ""
+    elif nome:
         agendamentos = Agendamento.query.filter(
             Agendamento.nome.ilike(f"%{nome}%")
         ).order_by(Agendamento.data, Agendamento.inicio).all()
+        data_formatada = ""
     else:
         agendamentos = Agendamento.query.order_by(Agendamento.data, Agendamento.inicio).all()
+        data_formatada = ""
 
     for a in agendamentos:
         try:
@@ -252,7 +285,7 @@ def meus_agendamentos():
         except ValueError:
             a.data_formatada = a.data
 
-    return render_template("meus_agendamentos.html", agendamentos=agendamentos)
+    return render_template("meus_agendamentos.html", agendamentos=agendamentos, data_formatada=data_formatada)
 
 @app.route("/cancelar-por-ticket/<int:id>", methods=["POST"], endpoint="cancelar_por_ticket")
 def cancelar_por_ticket(id):
@@ -334,6 +367,8 @@ def exportar():
                 a.inicio.strftime("%H:%M"), a.fim.strftime("%H:%M")
             ])
     return send_file(csv_path, as_attachment=True)
+
+
 
 if __name__ == "__main__":
     with app.app_context():

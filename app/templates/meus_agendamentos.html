@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <title>Meus Agendamentos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -180,18 +183,52 @@
         border-radius: 14px;
       }
 
+          .card {
+      margin: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .top-bar input {
+        width: 90%;
+      }
+
+      .bottom-bar a {
+        width: 90%;
+        text-align: center;
+        border-radius: 14px;
+      }
+
       .card {
         margin: 16px;
       }
+    }
+
+    /* Flatpickr Customização */
+    .flatpickr-calendar {
+      border-radius: 16px !important;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08) !important;
+      overflow: hidden !important;
+    }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+      background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+      color: white !important;
+      border-radius: 8px !important;
+    }
+
+      
     }
   </style>
 </head>
 <body>
 
   <div class="top-bar">
-    <div class="titulo">📅 <strong>Agendamentos</strong></div>
-    <input type="text" id="pesquisa" placeholder="Consultar dados" onkeyup="filtrarAgendamentos()">
-  </div>
+  <div class="titulo">📅 <strong>Agendamentos</strong></div>
+  <input type="text" id="pesquisa" placeholder="Consultar dados" onkeyup="filtrarAgendamentos()">
+</div>
+
+<div class="calendar-container">
+  <input type="text" id="datepicker" placeholder="Selecione uma data" readonly>
+</div>
 
   {% if agendamentos %}
     {% for a in agendamentos %}
@@ -231,6 +268,18 @@
       });
     }
   </script>
+<script>
+  flatpickr("#datepicker", {
+    dateFormat: "d/m/Y",
+    defaultDate: "{{ data_formatada or '' }}",
+    onChange: function(selectedDates, dateStr, instance) {
+      if (selectedDates.length > 0) {
+        const dataSelecionada = selectedDates[0].toISOString().split('T')[0];
+        window.location.href = `/meus-agendamentos?data=${dataSelecionada}`;
+      }
+    }
+  });
+</script>
 
 </body>
 </html>
