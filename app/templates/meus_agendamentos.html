@@ -50,15 +50,18 @@
     }
 
     .top-bar input {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: none;
-      width: 100%;
-      max-width: 380px;
-      font-size: 14px;
-      background: #e2e8f0;
-      transition: all 0.2s ease;
-    }
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1; /* Adicionado para dar contorno */
+  box-shadow: none; /* Remove sombra extra */
+  outline: none; /* Remove borda de foco do Safari */
+  width: 100%;
+  max-width: 380px;
+  font-size: 14px;
+  background: #e2e8f0;
+  transition: all 0.2s ease;
+}
+
 
     .top-bar input:focus {
       outline: none;
@@ -172,22 +175,7 @@
       transform: scale(1.03);
     }
 
-    @media (max-width: 480px) {
-      .top-bar input {
-        width: 90%;
-      }
-
-      .bottom-bar a {
-        width: 90%;
-        text-align: center;
-        border-radius: 14px;
-      }
-
-          .card {
-      margin: 16px;
-    }
-
-    @media (max-width: 480px) {
+        @media (max-width: 480px) {
       .top-bar input {
         width: 90%;
       }
@@ -201,7 +189,8 @@
       .card {
         margin: 16px;
       }
-    }
+    }  /* <--- esta chave de fechamento estava FALTANDO no seu código original */
+
 
     /* Flatpickr Customização */
     .flatpickr-calendar {
@@ -214,17 +203,36 @@
       color: white !important;
       border-radius: 8px !important;
     }
+#abrir-calendario {
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+  transition: background 0.3s, transform 0.2s;
+}
 
-      
-    }
+#abrir-calendario:hover {
+  background: linear-gradient(to right, #2563eb, #1d4ed8);
+  transform: scale(1.02);
+}
   </style>
+
 </head>
 <body>
 
   <div class="top-bar">
   <div class="titulo">📅 <strong>Agendamentos</strong></div>
   <input type="text" id="pesquisa" placeholder="Consultar dados" onkeyup="filtrarAgendamentos()">
+  <button id="abrir-calendario" onclick="abrirCalendario()">📅 Consultar Data</button>
 </div>
+
 
 <div class="calendar-container">
   <input type="text" id="datepicker" placeholder="Selecione uma data" readonly>
@@ -279,6 +287,12 @@
       }
     }
   });
+</script>
+<script>
+  function abrirCalendario() {
+    const input = document.getElementById('datepicker');
+    input._flatpickr.open(); // abre o calendário programaticamente
+  }
 </script>
 
 </body>

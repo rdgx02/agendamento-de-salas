@@ -379,7 +379,15 @@
 <script>
   flatpickr("#data", {
   dateFormat: "d/m/Y",
-  locale: "pt"
+  locale: "pt",
+  disableMobile: true,
+  disable: [
+    function(date) {
+      // Bloquear sábados (6) e domingos (0)
+      return (date.getDay() === 0 || date.getDay() === 6);
+    }
+  ],
+  minDate: "today" // Bloquear datas passadas
 });
 
 </script>
